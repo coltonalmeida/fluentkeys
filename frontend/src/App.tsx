@@ -1,9 +1,9 @@
 import { SignedIn, SignedOut, SignInButton, UserButton, useAuth } from '@clerk/clerk-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { apiRequest, getWeakKeys, postResult, type User } from './lib/api'
+import { KeyboardVisual } from './components/KeyboardVisual'
 import { Leaderboard } from './components/Leaderboard'
-import { PracticeView } from './components/PracticeView'
 import { ResultsScreen } from './components/ResultsScreen'
 import { StatsPanel } from './components/StatsPanel'
 import { ThemeToggle } from './components/ThemeToggle'
@@ -11,6 +11,7 @@ import { TypingArea } from './components/TypingArea'
 import { Unboxing } from './components/Unboxing'
 import { useTheme } from './hooks/useTheme'
 import { useTypingTest, type TestSettings } from './hooks/useTypingTest'
+import { CHAR_TO_KEY } from './lib/keyboard'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from './lib/words'
 
 const DURATIONS = [5, 15, 30, 60] as const
@@ -38,6 +39,21 @@ function App() {
   const [showPractice, setShowPractice] = useState(true)
   const [introDone, setIntroDone] = useState(false)
   const { theme, toggle: toggleTheme } = useTheme()
+  const [flashKeyId, setFlashKeyId] = useState<string | null>(null)
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Wrong keypresses flash the offending key on the visual keyboard.
+  const handleTestKey = (key: string) => {
+    if (showPractice && key.length === 1 && key !== target[index]) {
+      const pressed = CHAR_TO_KEY[key]
+      if (pressed) {
+        setFlashKeyId(pressed.keyId)
+        if (flashTimer.current) clearTimeout(flashTimer.current)
+        flashTimer.current = setTimeout(() => setFlashKeyId(null), 200)
+      }
+    }
+    handleKey(key)
+  }
   const [isPersonalBest, setIsPersonalBest] = useState(false)
 
   // Sync our users row on sign-in (backend upserts by clerk_id).
@@ -151,10 +167,6 @@ function App() {
           />
         </div>
 
-        {/* Practice mode replaces the test so two keydown handlers never compete. */}
-        {showPractice ? (
-          <PracticeView />
-        ) : (
         <AnimatePresence mode="wait">
           {status === 'finished' && stats ? (
             <motion.div
@@ -173,18 +185,22 @@ function App() {
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.2 }}
             >
-              <TypingArea target={target} charStates={charStates} index={index} onKey={handleKey} />
+              <TypingArea target={target} charStates={charStates} index={index} onKey={handleTestKey} />
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Practice: the visual keyboard guides the main test. */}
+        {showPractice && status !== 'finished' && (
+          <KeyboardVisual nextChar={target[index] ?? null} flashKeyId={flashKeyId} />
         )}
 
         <p className="text-center text-sm text-zinc-500 dark:text-zinc-600">
-          {showPractice
-            ? 'Type the underlined character — the lit key shows where it is'
-            : status === 'idle'
-              ? 'Click the text and start typing to begin'
-              : ' '}
+          {status === 'idle'
+            ? showPractice
+              ? 'Click the text and start typing — the lit key shows the next character'
+              : 'Click the text and start typing to begin'
+            : ' '}
         </p>
 
         {showLeaderboard && <Leaderboard />}
