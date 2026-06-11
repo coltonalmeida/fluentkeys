@@ -1,4 +1,6 @@
+import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
+import { ResultsScreen } from './components/ResultsScreen'
 import { TypingArea } from './components/TypingArea'
 import { useTypingTest, type TestSettings } from './hooks/useTypingTest'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from './lib/words'
@@ -46,24 +48,28 @@ function App() {
           />
         </div>
 
-        {status === 'finished' && stats ? (
-          <div className="flex flex-col items-center gap-6 rounded-lg bg-zinc-800/50 p-10">
-            <div className="flex gap-12 text-center">
-              <Stat label="WPM" value={stats.wpm.toFixed(0)} />
-              <Stat label="Accuracy" value={`${stats.accuracy.toFixed(1)}%`} />
-              <Stat label="Raw WPM" value={stats.rawWpm.toFixed(0)} />
-            </div>
-            <button
-              type="button"
-              onClick={restart}
-              className="rounded-md bg-emerald-500 px-6 py-2 font-semibold text-zinc-900 hover:bg-emerald-400"
+        <AnimatePresence mode="wait">
+          {status === 'finished' && stats ? (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, y: -16 }}
             >
-              Try again
-            </button>
-          </div>
-        ) : (
-          <TypingArea target={target} charStates={charStates} index={index} onKey={handleKey} />
-        )}
+              <ResultsScreen stats={stats} onRestart={restart} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="test"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.2 }}
+            >
+              <TypingArea target={target} charStates={charStates} index={index} onKey={handleKey} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <p className="text-center text-sm text-zinc-600">
           {status === 'idle' ? 'Click the text and start typing to begin' : ' '}
@@ -99,15 +105,6 @@ function Selector({
         ))}
       </select>
     </label>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-4xl font-bold text-emerald-400">{value}</div>
-      <div className="text-sm uppercase tracking-wider text-zinc-500">{label}</div>
-    </div>
   )
 }
 
