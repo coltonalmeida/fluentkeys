@@ -9,7 +9,7 @@ export function Unboxing({ onDone }: { onDone: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="relative">
-        <KeyboardVisual nextChar={null} flashKeyId={null} />
+        <KeyboardVisual nextChar={null} flashKeyId={null} showInfo={false} />
         <motion.div
           className="absolute -inset-3 z-10 rounded-2xl"
           style={{

@@ -9,6 +9,7 @@ import { StatsPanel } from './components/StatsPanel'
 import { ThemeToggle } from './components/ThemeToggle'
 import { TypingArea } from './components/TypingArea'
 import { Unboxing } from './components/Unboxing'
+import { useTheme } from './hooks/useTheme'
 import { useTypingTest, type TestSettings } from './hooks/useTypingTest'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from './lib/words'
 
@@ -36,6 +37,7 @@ function App() {
   // The unboxing reveals the practice keyboard, so practice starts open.
   const [showPractice, setShowPractice] = useState(true)
   const [introDone, setIntroDone] = useState(false)
+  const { theme, toggle: toggleTheme } = useTheme()
   const [isPersonalBest, setIsPersonalBest] = useState(false)
 
   // Sync our users row on sign-in (backend upserts by clerk_id).
@@ -123,7 +125,7 @@ function App() {
               </button>
               <UserButton />
             </SignedIn>
-            <ThemeToggle />
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
         </header>
 

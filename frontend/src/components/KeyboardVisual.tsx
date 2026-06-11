@@ -19,9 +19,11 @@ interface KeyboardVisualProps {
   nextChar: string | null
   /** Key id to flash red after a wrong press. */
   flashKeyId: string | null
+  /** Hide the legend info button (e.g. during the unboxing intro). */
+  showInfo?: boolean
 }
 
-export function KeyboardVisual({ nextChar, flashKeyId }: KeyboardVisualProps) {
+export function KeyboardVisual({ nextChar, flashKeyId, showInfo = true }: KeyboardVisualProps) {
   const [showLegend, setShowLegend] = useState(false)
   const target = nextChar !== null ? CHAR_TO_KEY[nextChar] : undefined
   const highlighted = new Set<string>()
@@ -50,6 +52,7 @@ export function KeyboardVisual({ nextChar, flashKeyId }: KeyboardVisualProps) {
             </div>
           ))}
         </div>
+        {showInfo && (
         <button
           type="button"
           aria-label="Finger color legend"
@@ -62,12 +65,15 @@ export function KeyboardVisual({ nextChar, flashKeyId }: KeyboardVisualProps) {
         >
           <Info size={18} />
         </button>
+        )}
       </div>
-      <div
-        className={`transition-opacity duration-200 ${showLegend ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-      >
-        <Legend />
-      </div>
+      {showInfo && (
+        <div
+          className={`transition-opacity duration-200 ${showLegend ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+        >
+          <Legend />
+        </div>
+      )}
     </div>
   )
 }
