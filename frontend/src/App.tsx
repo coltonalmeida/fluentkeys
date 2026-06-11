@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { apiRequest, getWeakKeys, postResult, type User } from './lib/api'
 import { Leaderboard } from './components/Leaderboard'
+import { PracticeView } from './components/PracticeView'
 import { ResultsScreen } from './components/ResultsScreen'
 import { StatsPanel } from './components/StatsPanel'
 import { TypingArea } from './components/TypingArea'
@@ -23,6 +24,7 @@ function App() {
     useTypingTest(settings, persistedWeakKeys)
   const [showStats, setShowStats] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showPractice, setShowPractice] = useState(false)
   const [isPersonalBest, setIsPersonalBest] = useState(false)
 
   // Sync our users row on sign-in (backend upserts by clerk_id).
@@ -77,6 +79,13 @@ function App() {
             </span>
             <button
               type="button"
+              onClick={() => setShowPractice((s) => !s)}
+              className={`text-sm underline ${showPractice ? 'text-emerald-400' : 'text-zinc-400 hover:text-zinc-200'}`}
+            >
+              Practice
+            </button>
+            <button
+              type="button"
               onClick={() => setShowLeaderboard((s) => !s)}
               className={`text-sm underline ${showLeaderboard ? 'text-emerald-400' : 'text-zinc-400 hover:text-zinc-200'}`}
             >
@@ -124,6 +133,10 @@ function App() {
           />
         </div>
 
+        {/* Practice mode replaces the test so two keydown handlers never compete. */}
+        {showPractice ? (
+          <PracticeView />
+        ) : (
         <AnimatePresence mode="wait">
           {status === 'finished' && stats ? (
             <motion.div
@@ -146,9 +159,14 @@ function App() {
             </motion.div>
           )}
         </AnimatePresence>
+        )}
 
         <p className="text-center text-sm text-zinc-600">
-          {status === 'idle' ? 'Click the text and start typing to begin' : ' '}
+          {showPractice
+            ? 'Type the underlined character — the lit key shows where it is'
+            : status === 'idle'
+              ? 'Click the text and start typing to begin'
+              : ' '}
         </p>
 
         {showLeaderboard && <Leaderboard />}
