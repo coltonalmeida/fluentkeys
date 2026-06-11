@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
+import { AuthPanel } from './components/AuthPanel'
 import { ResultsScreen } from './components/ResultsScreen'
 import { TypingArea } from './components/TypingArea'
+import { useAuth } from './hooks/useAuth'
 import { useTypingTest, type TestSettings } from './hooks/useTypingTest'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from './lib/words'
 
@@ -15,16 +17,38 @@ function App() {
   })
   const { target, charStates, index, status, timeLeft, stats, handleKey, restart } =
     useTypingTest(settings)
+  const { user, logout } = useAuth()
+  const [showAuth, setShowAuth] = useState(false)
 
   return (
     <div className="min-h-screen bg-zinc-900 text-zinc-100">
       <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-12">
         <header className="flex items-baseline justify-between">
           <h1 className="text-3xl font-bold text-emerald-400">FluentKeys</h1>
-          <span className="font-mono text-2xl tabular-nums text-zinc-400">
-            {status === 'running' ? `${timeLeft}s` : `${settings.duration}s`}
-          </span>
+          <div className="flex items-baseline gap-6">
+            <span className="font-mono text-2xl tabular-nums text-zinc-400">
+              {status === 'running' ? `${timeLeft}s` : `${settings.duration}s`}
+            </span>
+            {user ? (
+              <span className="text-sm text-zinc-400">
+                <span className="text-emerald-400">{user.username}</span>{' '}
+                <button type="button" onClick={logout} className="text-zinc-500 underline hover:text-zinc-300">
+                  log out
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAuth(true)}
+                className="text-sm text-zinc-400 underline hover:text-zinc-200"
+              >
+                Log in
+              </button>
+            )}
+          </div>
         </header>
+
+        {showAuth && !user && <AuthPanel onClose={() => setShowAuth(false)} />}
 
         {/* Settings */}
         <div className="flex flex-wrap gap-4 text-sm">

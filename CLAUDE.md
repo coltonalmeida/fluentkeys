@@ -101,11 +101,12 @@ account/persistence layer.
 **Done when:** finishing a test animates into a results screen with correct stats.
 
 ### Phase 4 — Auth
-- Express auth routes: register, login
-- Password hashing + JWT issuance
-- `users` table wired up
-- Frontend login/signup UI, token storage
-- One protected route to confirm the token flow end to end
+- Use Clerk for authentication (hosted login/signup, sessions, OAuth, resets). Do NOT roll our own password/JWT logic.
+- Frontend: add Clerk's React provider and prebuilt sign-in/sign-up components
+- Backend: verify Clerk-issued session tokens in Express middleware on protected routes (this replaces issuing our own JWTs)
+- On first sign-in, upsert a row in users keyed by clerk_user_id (Clerk is the identity source; our users row links app data to it)
+- One protected route to confirm the token-verification flow end to end
+- Store the Clerk publishable/secret keys in env vars only Done when: a user can sign up / log in via Clerk and hit a protected. Express route whose middleware verifies their Clerk session token.
 **Done when:** a user can register, log in, and hit a protected route with their token.
 
 ### Phase 5 — Persisting results
