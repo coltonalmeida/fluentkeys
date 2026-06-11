@@ -1,9 +1,8 @@
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
-import { AuthPanel } from './components/AuthPanel'
 import { ResultsScreen } from './components/ResultsScreen'
 import { TypingArea } from './components/TypingArea'
-import { useAuth } from './hooks/useAuth'
 import { useTypingTest, type TestSettings } from './hooks/useTypingTest'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from './lib/words'
 
@@ -17,9 +16,6 @@ function App() {
   })
   const { target, charStates, index, status, timeLeft, stats, handleKey, restart } =
     useTypingTest(settings)
-  const { user, logout } = useAuth()
-  const [showAuth, setShowAuth] = useState(false)
-
   return (
     <div className="min-h-screen bg-zinc-900 text-zinc-100">
       <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-12">
@@ -29,26 +25,18 @@ function App() {
             <span className="font-mono text-2xl tabular-nums text-zinc-400">
               {status === 'running' ? `${timeLeft}s` : `${settings.duration}s`}
             </span>
-            {user ? (
-              <span className="text-sm text-zinc-400">
-                <span className="text-emerald-400">{user.username}</span>{' '}
-                <button type="button" onClick={logout} className="text-zinc-500 underline hover:text-zinc-300">
-                  log out
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button type="button" className="text-sm text-zinc-400 underline hover:text-zinc-200">
+                  Log in
                 </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowAuth(true)}
-                className="text-sm text-zinc-400 underline hover:text-zinc-200"
-              >
-                Log in
-              </button>
-            )}
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
           </div>
         </header>
-
-        {showAuth && !user && <AuthPanel onClose={() => setShowAuth(false)} />}
 
         {/* Settings */}
         <div className="flex flex-wrap gap-4 text-sm">

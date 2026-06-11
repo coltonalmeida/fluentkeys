@@ -17,8 +17,10 @@ track personal bests, and compete on a leaderboard. Word generation is static
 - Framer Motion — results-screen transitions and leaderboard ONLY
 
 **Backend**
-- Node.js + Express — REST API for auth, results, leaderboards
-- JWT — auth tokens
+- Node.js + Express — REST API for results and leaderboards
+- Clerk — authentication (hosted). `@clerk/clerk-react` on the frontend,
+  `@clerk/express` middleware verifying Clerk session tokens on the backend.
+  No passwords are stored in our database.
 
 **Database**
 - PostgreSQL — users, test sessions, results, personal bests, leaderboard entries
@@ -41,7 +43,8 @@ track personal bests, and compete on a leaderboard. Word generation is static
 - WPM and accuracy are computed client-side during the test, then sent to the
   backend on completion. The backend trusts but validates these (sanity-check
   ranges) rather than recomputing keystroke-by-keystroke.
-- Never commit secrets. JWT secrets, DB URLs, etc. live in env vars only.
+- Never commit secrets. Clerk keys, DB URLs, etc. live in env vars only.
+  (`VITE_CLERK_PUBLISHABLE_KEY` is public by design; `CLERK_SECRET_KEY` is not.)
 - The Postgres schema is defined in Phase 0 and is the contract everything else
   depends on. Schema changes go through migrations, not ad-hoc edits.
 - Word generation does NOT call any AI or external API. It is purely static
@@ -49,7 +52,8 @@ track personal bests, and compete on a leaderboard. Word generation is static
 
 ## Schema (defined Phase 0, source of truth)
 
-- `users` — id, email, username, password_hash, created_at
+- `users` — id, clerk_id (unique, from Clerk), email, username, created_at.
+  Rows are upserted on first authenticated request; Clerk owns credentials.
 - `test_sessions` — id, user_id (nullable for anonymous), key_set, difficulty,
   duration, started_at
 - `results` — id, session_id, user_id, wpm, accuracy, raw_wpm, char_counts,
@@ -106,8 +110,9 @@ account/persistence layer.
 - Backend: verify Clerk-issued session tokens in Express middleware on protected routes (this replaces issuing our own JWTs)
 - On first sign-in, upsert a row in users keyed by clerk_user_id (Clerk is the identity source; our users row links app data to it)
 - One protected route to confirm the token-verification flow end to end
-- Store the Clerk publishable/secret keys in env vars only Done when: a user can sign up / log in via Clerk and hit a protected. Express route whose middleware verifies their Clerk session token.
-**Done when:** a user can register, log in, and hit a protected route with their token.
+- Store the Clerk publishable/secret keys in env vars only
+**Done when:** a user can sign up / log in via Clerk and hit a protected Express
+route whose middleware verifies their Clerk session token.
 
 ### Phase 5 — Persisting results
 - POST results on test completion; store `test_sessions` and `results`
