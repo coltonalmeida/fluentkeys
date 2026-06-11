@@ -1,8 +1,9 @@
 import { SignedIn, SignedOut, SignInButton, UserButton, useAuth } from '@clerk/clerk-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { apiRequest, type User } from './lib/api'
+import { apiRequest, postResult, type User } from './lib/api'
 import { ResultsScreen } from './components/ResultsScreen'
+import { StatsPanel } from './components/StatsPanel'
 import { TypingArea } from './components/TypingArea'
 import { useTypingTest, type TestSettings } from './hooks/useTypingTest'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from './lib/words'
@@ -15,9 +16,11 @@ function App() {
     difficulty: 'medium',
     duration: 30,
   })
-  const { target, charStates, index, status, timeLeft, stats, handleKey, restart } =
+  const { target, charStates, index, status, timeLeft, stats, handleKey, restart, missCounts } =
     useTypingTest(settings)
   const { isSignedIn, getToken } = useAuth()
+  const [showStats, setShowStats] = useState(false)
+  const [isPersonalBest, setIsPersonalBest] = useState(false)
 
   // Sync our users row on sign-in (backend upserts by clerk_id).
   useEffect(() => {
@@ -26,6 +29,34 @@ function App() {
       .then((token) => apiRequest<{ user: User }>('/auth/me', token))
       .catch((err) => console.error('user sync failed:', err))
   }, [isSignedIn, getToken])
+
+  // Persist the result when a test finishes (signed-in users only).
+  useEffect(() => {
+    if (status !== 'finished' || !stats || !isSignedIn) return
+    setIsPersonalBest(false)
+    getToken()
+      .then((token) =>
+        postResult(token, {
+          keySet: settings.keySet,
+          difficulty: settings.difficulty,
+          duration: settings.duration,
+          wpm: stats.wpm,
+          accuracy: stats.accuracy,
+          rawWpm: stats.rawWpm,
+          charCounts: {
+            correct: stats.correctChars,
+            incorrect: stats.incorrectChars,
+            keystrokes: stats.totalKeystrokes,
+            ...Object.fromEntries(
+              Object.entries(missCounts).map(([k, v]) => [`miss_${k}`, v]),
+            ),
+          },
+        }),
+      )
+      .then(({ isPersonalBest }) => setIsPersonalBest(isPersonalBest))
+      .catch((err) => console.error('failed to save result:', err))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per finish
+  }, [status])
 
   return (
     <div className="min-h-screen bg-zinc-900 text-zinc-100">
@@ -44,6 +75,13 @@ function App() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
+              <button
+                type="button"
+                onClick={() => setShowStats((s) => !s)}
+                className={`text-sm underline ${showStats ? 'text-emerald-400' : 'text-zinc-400 hover:text-zinc-200'}`}
+              >
+                My stats
+              </button>
               <UserButton />
             </SignedIn>
           </div>
@@ -79,7 +117,7 @@ function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, y: -16 }}
             >
-              <ResultsScreen stats={stats} onRestart={restart} />
+              <ResultsScreen stats={stats} onRestart={restart} isPersonalBest={isPersonalBest} />
             </motion.div>
           ) : (
             <motion.div
@@ -97,6 +135,8 @@ function App() {
         <p className="text-center text-sm text-zinc-600">
           {status === 'idle' ? 'Click the text and start typing to begin' : ' '}
         </p>
+
+        {showStats && isSignedIn && <StatsPanel />}
       </div>
     </div>
   )

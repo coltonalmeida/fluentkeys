@@ -5,6 +5,7 @@ import type { TestStats } from '../lib/stats'
 interface ResultsScreenProps {
   stats: TestStats
   onRestart: () => void
+  isPersonalBest?: boolean
 }
 
 // Framer Motion is allowed here — results screen and leaderboard only.
@@ -47,7 +48,7 @@ function AnimatedNumber({ value, decimals = 0 }: { value: number; decimals?: num
   return <>{display.toFixed(decimals)}</>
 }
 
-export function ResultsScreen({ stats, onRestart }: ResultsScreenProps) {
+export function ResultsScreen({ stats, onRestart, isPersonalBest = false }: ResultsScreenProps) {
   return (
     <motion.div
       variants={container}
@@ -58,6 +59,17 @@ export function ResultsScreen({ stats, onRestart }: ResultsScreenProps) {
       <motion.h2 variants={item} className="text-xl font-semibold text-zinc-300">
         Test complete
       </motion.h2>
+
+      {isPersonalBest && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 18, delay: 0.5 }}
+          className="rounded-full bg-emerald-500/15 px-4 py-1 text-sm font-semibold text-emerald-400"
+        >
+          🏆 New personal best!
+        </motion.div>
+      )}
 
       <div className="flex flex-wrap justify-center gap-12 text-center">
         <motion.div variants={item}>

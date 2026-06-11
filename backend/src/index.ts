@@ -3,6 +3,7 @@ import { clerkMiddleware } from "@clerk/express";
 import cors from "cors";
 import express from "express";
 import { authRouter } from "./auth.js";
+import { resultsRouter } from "./results.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
@@ -17,6 +18,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/auth", authRouter);
+app.use("/", resultsRouter);
 
 app.listen(port, () => {
   console.log(`fluentkeys backend listening on http://localhost:${port}`);

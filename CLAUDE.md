@@ -124,7 +124,7 @@ route whose middleware verifies their Clerk session token.
 - Leaderboard read/write endpoints, backed by an indexed Postgres query
   (index on the sort columns — WPM, time window, key set)
 - Leaderboard component with Framer Motion
-- Skip Redis. Revisit only if read latency is a real measured problem.
+- implement Redis. Revisit only if read latency is a real measured problem.
 **Done when:** results appear on a leaderboard sorted correctly and reads are fast.
 
 ### Phase 7 — Refine word generation

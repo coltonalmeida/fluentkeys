@@ -106,5 +106,16 @@ export function useTypingTest(settings: TestSettings) {
     [status, index, target, charStates, finish],
   )
 
-  return { target, charStates, index, status, timeLeft, stats, handleKey, restart }
+  return {
+    target,
+    charStates,
+    index,
+    status,
+    timeLeft,
+    stats,
+    handleKey,
+    restart,
+    /** Per-key miss counts for this session (feeds char_counts / Phase 7). */
+    missCounts: weakKeysRef.current,
+  }
 }

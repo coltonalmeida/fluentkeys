@@ -32,3 +32,44 @@ export async function apiRequest<T>(
   if (!res.ok) throw new ApiError(res.status, body.error ?? `Request failed (${res.status})`)
   return body as T
 }
+
+export interface ResultPayload {
+  keySet: string
+  difficulty: string
+  duration: number
+  wpm: number
+  accuracy: number
+  rawWpm: number
+  charCounts: Record<string, number>
+}
+
+export interface HistoryEntry {
+  id: string
+  wpm: string
+  accuracy: string
+  raw_wpm: string
+  created_at: string
+  key_set: string
+  difficulty: string
+  duration: number
+}
+
+export interface PersonalBest {
+  key_set: string
+  difficulty: string
+  wpm: string
+  accuracy: string
+  achieved_at: string
+}
+
+export const postResult = (token: string | null, payload: ResultPayload) =>
+  apiRequest<{ resultId: string; isPersonalBest: boolean }>('/results', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const getHistory = (token: string | null) =>
+  apiRequest<{ results: HistoryEntry[] }>('/results', token)
+
+export const getPersonalBests = (token: string | null) =>
+  apiRequest<{ personalBests: PersonalBest[] }>('/personal-bests', token)
