@@ -24,7 +24,8 @@ track personal bests, and compete on a leaderboard. Word generation is static
 
 **Database**
 - PostgreSQL — users, test sessions, results, personal bests, leaderboard entries
-- Redis — NOT NOW. Only add if leaderboard reads become a measured bottleneck.
+- Redis — leaderboard read cache (60s TTL, invalidated on new entries).
+  Cache only: every Redis call degrades gracefully to Postgres if Redis is down.
 
 **Word generation (no AI / no token usage)**
 - Static word lists bundled with the app, filterable by key set and difficulty

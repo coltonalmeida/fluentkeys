@@ -73,3 +73,18 @@ export const getHistory = (token: string | null) =>
 
 export const getPersonalBests = (token: string | null) =>
   apiRequest<{ personalBests: PersonalBest[] }>('/personal-bests', token)
+
+export interface LeaderboardEntry {
+  username: string | null
+  wpm: string
+  accuracy: string
+  created_at: string
+}
+
+export type LeaderboardWindow = 'all' | 'day' | 'week'
+
+export const getLeaderboard = (keySet: string, difficulty: string, window: LeaderboardWindow) =>
+  apiRequest<{ entries: LeaderboardEntry[] }>(
+    `/leaderboard?keySet=${keySet}&difficulty=${difficulty}&window=${window}`,
+    null,
+  )

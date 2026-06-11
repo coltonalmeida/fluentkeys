@@ -2,6 +2,7 @@ import { SignedIn, SignedOut, SignInButton, UserButton, useAuth } from '@clerk/c
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { apiRequest, postResult, type User } from './lib/api'
+import { Leaderboard } from './components/Leaderboard'
 import { ResultsScreen } from './components/ResultsScreen'
 import { StatsPanel } from './components/StatsPanel'
 import { TypingArea } from './components/TypingArea'
@@ -20,6 +21,7 @@ function App() {
     useTypingTest(settings)
   const { isSignedIn, getToken } = useAuth()
   const [showStats, setShowStats] = useState(false)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [isPersonalBest, setIsPersonalBest] = useState(false)
 
   // Sync our users row on sign-in (backend upserts by clerk_id).
@@ -67,6 +69,13 @@ function App() {
             <span className="font-mono text-2xl tabular-nums text-zinc-400">
               {status === 'running' ? `${timeLeft}s` : `${settings.duration}s`}
             </span>
+            <button
+              type="button"
+              onClick={() => setShowLeaderboard((s) => !s)}
+              className={`text-sm underline ${showLeaderboard ? 'text-emerald-400' : 'text-zinc-400 hover:text-zinc-200'}`}
+            >
+              Leaderboard
+            </button>
             <SignedOut>
               <SignInButton mode="modal">
                 <button type="button" className="text-sm text-zinc-400 underline hover:text-zinc-200">
@@ -136,6 +145,7 @@ function App() {
           {status === 'idle' ? 'Click the text and start typing to begin' : ' '}
         </p>
 
+        {showLeaderboard && <Leaderboard />}
         {showStats && isSignedIn && <StatsPanel />}
       </div>
     </div>

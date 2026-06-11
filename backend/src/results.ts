@@ -2,6 +2,7 @@ import { getAuth } from '@clerk/express'
 import { Router, type NextFunction, type Request, type Response } from 'express'
 import { requireSignedIn, upsertUser } from './auth.js'
 import { pool } from './db.js'
+import { invalidateLeaderboard } from './leaderboard.js'
 
 const KEY_SETS = new Set(['home', 'home-top', 'all'])
 const DIFFICULTIES = new Set(['easy', 'medium', 'hard'])
@@ -78,7 +79,13 @@ resultsRouter.post(
          RETURNING id`,
         [user.id, parsed.keySet, parsed.difficulty, parsed.wpm, parsed.accuracy, resultId],
       )
+      await client.query(
+        `INSERT INTO leaderboard_entries (user_id, key_set, difficulty, wpm, accuracy)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [user.id, parsed.keySet, parsed.difficulty, parsed.wpm, parsed.accuracy],
+      )
       await client.query('COMMIT')
+      await invalidateLeaderboard(parsed.keySet, parsed.difficulty)
       res.status(201).json({ resultId, isPersonalBest: pb.rowCount === 1 })
     } catch (err) {
       await client.query('ROLLBACK')
