@@ -6,11 +6,20 @@ import { Leaderboard } from './components/Leaderboard'
 import { PracticeView } from './components/PracticeView'
 import { ResultsScreen } from './components/ResultsScreen'
 import { StatsPanel } from './components/StatsPanel'
+import { ThemeToggle } from './components/ThemeToggle'
 import { TypingArea } from './components/TypingArea'
+import { Unboxing } from './components/Unboxing'
 import { useTypingTest, type TestSettings } from './hooks/useTypingTest'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from './lib/words'
 
 const DURATIONS = [5, 15, 30, 60] as const
+
+const NAV_BUTTON = (active: boolean) =>
+  `text-sm underline ${
+    active
+      ? 'text-emerald-600 dark:text-emerald-400'
+      : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+  }`
 
 function App() {
   const [settings, setSettings] = useState<TestSettings>({
@@ -24,7 +33,9 @@ function App() {
     useTypingTest(settings, persistedWeakKeys)
   const [showStats, setShowStats] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
-  const [showPractice, setShowPractice] = useState(false)
+  // The unboxing reveals the practice keyboard, so practice starts open.
+  const [showPractice, setShowPractice] = useState(true)
+  const [introDone, setIntroDone] = useState(false)
   const [isPersonalBest, setIsPersonalBest] = useState(false)
 
   // Sync our users row on sign-in (backend upserts by clerk_id).
@@ -68,46 +79,51 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per finish
   }, [status])
 
+  if (!introDone) {
+    return (
+      <div className="min-h-screen bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
+        <Unboxing onDone={() => setIntroDone(true)} />
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-zinc-900 text-zinc-100">
-      <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-12">
-        <header className="flex items-baseline justify-between">
-          <h1 className="text-3xl font-bold text-emerald-400">FluentKeys</h1>
-          <div className="flex items-baseline gap-6">
-            <span className="font-mono text-2xl tabular-nums text-zinc-400">
+    <div className="min-h-screen bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
+      <motion.div
+        className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-12"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <header className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">FluentKeys</h1>
+          <div className="flex items-center gap-6">
+            <span className="font-mono text-2xl tabular-nums text-zinc-500 dark:text-zinc-400">
               {status === 'running' ? `${timeLeft}s` : `${settings.duration}s`}
             </span>
-            <button
-              type="button"
-              onClick={() => setShowPractice((s) => !s)}
-              className={`text-sm underline ${showPractice ? 'text-emerald-400' : 'text-zinc-400 hover:text-zinc-200'}`}
-            >
+            <button type="button" onClick={() => setShowPractice((s) => !s)} className={NAV_BUTTON(showPractice)}>
               Practice
             </button>
-            <button
-              type="button"
-              onClick={() => setShowLeaderboard((s) => !s)}
-              className={`text-sm underline ${showLeaderboard ? 'text-emerald-400' : 'text-zinc-400 hover:text-zinc-200'}`}
-            >
+            <button type="button" onClick={() => setShowLeaderboard((s) => !s)} className={NAV_BUTTON(showLeaderboard)}>
               Leaderboard
             </button>
             <SignedOut>
               <SignInButton mode="modal">
-                <button type="button" className="text-sm text-zinc-400 underline hover:text-zinc-200">
+                <button
+                  type="button"
+                  className="text-sm text-zinc-500 underline hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                >
                   Log in
                 </button>
               </SignInButton>
             </SignedOut>
             <SignedIn>
-              <button
-                type="button"
-                onClick={() => setShowStats((s) => !s)}
-                className={`text-sm underline ${showStats ? 'text-emerald-400' : 'text-zinc-400 hover:text-zinc-200'}`}
-              >
+              <button type="button" onClick={() => setShowStats((s) => !s)} className={NAV_BUTTON(showStats)}>
                 My stats
               </button>
               <UserButton />
             </SignedIn>
+            <ThemeToggle />
           </div>
         </header>
 
@@ -161,17 +177,17 @@ function App() {
         </AnimatePresence>
         )}
 
-        <p className="text-center text-sm text-zinc-600">
+        <p className="text-center text-sm text-zinc-500 dark:text-zinc-600">
           {showPractice
             ? 'Type the underlined character — the lit key shows where it is'
             : status === 'idle'
               ? 'Click the text and start typing to begin'
-              : ' '}
+              : ' '}
         </p>
 
         {showLeaderboard && <Leaderboard />}
         {showStats && isSignedIn && <StatsPanel />}
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -188,12 +204,12 @@ function Selector({
   onChange: (value: string) => void
 }) {
   return (
-    <label className="flex items-center gap-2 text-zinc-400">
+    <label className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
       {label}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-zinc-100"
+        className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
       >
         {options.map(([id, text]) => (
           <option key={id} value={id}>

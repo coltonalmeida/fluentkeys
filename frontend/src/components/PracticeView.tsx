@@ -76,8 +76,8 @@ export function PracticeView() {
       <PracticeText text={text} index={index} />
       {done && stats ? (
         <div className="flex flex-col items-center gap-3">
-          <p className="text-2xl font-bold text-emerald-400">Done!</p>
-          <p className="font-mono text-zinc-300">
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">Done!</p>
+          <p className="font-mono text-zinc-700 dark:text-zinc-300">
             {stats.wpm} wpm · {stats.accuracy}% accuracy
           </p>
           <button
@@ -103,13 +103,13 @@ function PracticeText({ text, index }: { text: string; index: number }) {
         const cls =
           i < index
             ? ch === ' '
-              ? 'text-zinc-600'
-              : 'text-zinc-100'
+              ? 'text-zinc-400 dark:text-zinc-600'
+              : 'text-zinc-900 dark:text-zinc-100'
             : i === index
-              ? 'text-zinc-100 underline decoration-emerald-400 decoration-2 underline-offset-4'
+              ? 'text-zinc-900 dark:text-zinc-100 underline decoration-emerald-500 dark:decoration-emerald-400 decoration-2 underline-offset-4'
               : ch === ' '
-                ? 'text-zinc-600'
-                : 'text-zinc-500'
+                ? 'text-zinc-400 dark:text-zinc-600'
+                : 'text-zinc-400 dark:text-zinc-500'
         return (
           <span key={i} className={cls}>
             {display}

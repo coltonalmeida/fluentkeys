@@ -9,9 +9,9 @@ interface TypingAreaProps {
 }
 
 const charClass = (state: CharState | undefined): string => {
-  if (state === 'correct') return 'text-zinc-100'
-  if (state === 'incorrect') return 'text-red-400 underline decoration-red-400'
-  return 'text-zinc-500'
+  if (state === 'correct') return 'text-zinc-900 dark:text-zinc-100'
+  if (state === 'incorrect') return 'text-red-500 underline decoration-red-500 dark:text-red-400 dark:decoration-red-400'
+  return 'text-zinc-400 dark:text-zinc-500'
 }
 
 export function TypingArea({ target, charStates, index, onKey }: TypingAreaProps) {
@@ -49,7 +49,7 @@ export function TypingArea({ target, charStates, index, onKey }: TypingAreaProps
         e.preventDefault()
         onKey(e.key)
       }}
-      className="relative max-h-40 overflow-hidden rounded-lg bg-zinc-800/50 p-6 font-mono text-2xl leading-relaxed tracking-wide outline-none focus:ring-2 focus:ring-emerald-500/50"
+      className="relative max-h-40 overflow-hidden rounded-lg bg-zinc-200/60 dark:bg-zinc-800/50 p-6 font-mono text-2xl leading-relaxed tracking-wide outline-none focus:ring-2 focus:ring-emerald-500/50"
     >
       <div
         ref={caretRef}

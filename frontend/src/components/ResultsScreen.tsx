@@ -54,9 +54,9 @@ export function ResultsScreen({ stats, onRestart, isPersonalBest = false }: Resu
       variants={container}
       initial="hidden"
       animate="show"
-      className="flex flex-col items-center gap-8 rounded-lg bg-zinc-800/50 p-10"
+      className="flex flex-col items-center gap-8 rounded-lg bg-zinc-200/60 dark:bg-zinc-800/50 p-10"
     >
-      <motion.h2 variants={item} className="text-xl font-semibold text-zinc-300">
+      <motion.h2 variants={item} className="text-xl font-semibold text-zinc-700 dark:text-zinc-300">
         Test complete
       </motion.h2>
 
@@ -65,7 +65,7 @@ export function ResultsScreen({ stats, onRestart, isPersonalBest = false }: Resu
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 18, delay: 0.5 }}
-          className="rounded-full bg-emerald-500/15 px-4 py-1 text-sm font-semibold text-emerald-400"
+          className="rounded-full bg-emerald-500/15 px-4 py-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400"
         >
           🏆 New personal best!
         </motion.div>
@@ -73,19 +73,19 @@ export function ResultsScreen({ stats, onRestart, isPersonalBest = false }: Resu
 
       <div className="flex flex-wrap justify-center gap-12 text-center">
         <motion.div variants={item}>
-          <div className="text-6xl font-bold text-emerald-400">
+          <div className="text-6xl font-bold text-emerald-600 dark:text-emerald-400">
             <AnimatedNumber value={stats.wpm} />
           </div>
           <div className="mt-1 text-sm uppercase tracking-wider text-zinc-500">WPM</div>
         </motion.div>
         <motion.div variants={item}>
-          <div className="text-6xl font-bold text-zinc-100">
+          <div className="text-6xl font-bold text-zinc-900 dark:text-zinc-100">
             <AnimatedNumber value={stats.accuracy} decimals={1} />%
           </div>
           <div className="mt-1 text-sm uppercase tracking-wider text-zinc-500">Accuracy</div>
         </motion.div>
         <motion.div variants={item}>
-          <div className="text-6xl font-bold text-zinc-400">
+          <div className="text-6xl font-bold text-zinc-500 dark:text-zinc-400">
             <AnimatedNumber value={stats.rawWpm} />
           </div>
           <div className="mt-1 text-sm uppercase tracking-wider text-zinc-500">Raw WPM</div>
@@ -97,13 +97,13 @@ export function ResultsScreen({ stats, onRestart, isPersonalBest = false }: Resu
         className="flex gap-8 text-sm text-zinc-500"
       >
         <span>
-          <span className="text-zinc-300">{stats.correctChars}</span> correct chars
+          <span className="text-zinc-700 dark:text-zinc-300">{stats.correctChars}</span> correct chars
         </span>
         <span>
-          <span className="text-red-400">{stats.incorrectChars}</span> mistakes
+          <span className="text-red-500 dark:text-red-400">{stats.incorrectChars}</span> mistakes
         </span>
         <span>
-          <span className="text-zinc-300">{stats.totalKeystrokes}</span> keystrokes
+          <span className="text-zinc-700 dark:text-zinc-300">{stats.totalKeystrokes}</span> keystrokes
         </span>
       </motion.div>
 

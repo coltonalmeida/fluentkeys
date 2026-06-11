@@ -33,13 +33,13 @@ export function StatsPanel() {
     }
   }, [getToken])
 
-  if (error) return <p className="text-sm text-red-400">Could not load your stats.</p>
+  if (error) return <p className="text-sm text-red-500 dark:text-red-400">Could not load your stats.</p>
   if (!bests || !history) return <p className="text-sm text-zinc-500">Loading stats…</p>
 
   return (
-    <div className="flex flex-col gap-6 rounded-lg bg-zinc-800/50 p-6">
+    <div className="flex flex-col gap-6 rounded-lg bg-zinc-200/60 dark:bg-zinc-800/50 p-6">
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-400">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           Personal bests
         </h2>
         {bests.length === 0 ? (
@@ -49,12 +49,12 @@ export function StatsPanel() {
             {bests.map((pb) => (
               <div
                 key={`${pb.key_set}-${pb.difficulty}`}
-                className="rounded-md bg-zinc-900/60 px-4 py-3"
+                className="rounded-md bg-zinc-100 dark:bg-zinc-900/60 px-4 py-3"
               >
                 <div className="text-xs text-zinc-500">
                   {keySetLabel(pb.key_set)} · {difficultyLabel(pb.difficulty)}
                 </div>
-                <div className="text-2xl font-bold text-emerald-400">
+                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                   {Number(pb.wpm).toFixed(0)} <span className="text-sm font-normal">wpm</span>
                 </div>
                 <div className="text-xs text-zinc-500">
@@ -67,7 +67,7 @@ export function StatsPanel() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-400">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           Recent tests
         </h2>
         {history.length === 0 ? (
@@ -82,16 +82,16 @@ export function StatsPanel() {
                 <th className="pb-2 text-right">Accuracy</th>
               </tr>
             </thead>
-            <tbody className="text-zinc-300">
+            <tbody className="text-zinc-700 dark:text-zinc-300">
               {history.map((r) => (
-                <tr key={r.id} className="border-t border-zinc-700/50">
+                <tr key={r.id} className="border-t border-zinc-300 dark:border-zinc-700/50">
                   <td className="py-1.5 pr-4 text-zinc-500">
                     {new Date(r.created_at).toLocaleString()}
                   </td>
                   <td className="py-1.5 pr-4">
                     {keySetLabel(r.key_set)} · {difficultyLabel(r.difficulty)} · {r.duration}s
                   </td>
-                  <td className="py-1.5 pr-4 text-right font-semibold text-emerald-400">
+                  <td className="py-1.5 pr-4 text-right font-semibold text-emerald-600 dark:text-emerald-400">
                     {Number(r.wpm).toFixed(0)}
                   </td>
                   <td className="py-1.5 text-right">{Number(r.accuracy).toFixed(1)}%</td>

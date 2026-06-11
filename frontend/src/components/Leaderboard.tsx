@@ -44,12 +44,12 @@ export function Leaderboard() {
     }
   }, [keySet, difficulty, window])
 
-  const selectClass = 'rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-zinc-100'
+  const selectClass = 'rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2 py-1 text-zinc-900 dark:text-zinc-100'
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg bg-zinc-800/50 p-6">
+    <div className="flex flex-col gap-4 rounded-lg bg-zinc-200/60 dark:bg-zinc-800/50 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           Leaderboard
         </h2>
         <div className="flex gap-2 text-sm">
@@ -71,7 +71,7 @@ export function Leaderboard() {
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-400">Could not load the leaderboard.</p>}
+      {error && <p className="text-sm text-red-500 dark:text-red-400">Could not load the leaderboard.</p>}
       {!error && entries === null && <p className="text-sm text-zinc-500">Loading…</p>}
       {entries?.length === 0 && (
         <p className="text-sm text-zinc-500">No entries yet for this mode — set the first score!</p>
@@ -85,21 +85,21 @@ export function Leaderboard() {
               <motion.li
                 key={`${e.username}-${i}`}
                 variants={row}
-                className={`flex items-baseline gap-4 border-t border-zinc-700/50 py-2 first:border-t-0 ${
+                className={`flex items-baseline gap-4 border-t border-zinc-300 dark:border-zinc-700/50 py-2 first:border-t-0 ${
                   isMe ? 'rounded bg-emerald-500/10 px-2' : ''
                 }`}
               >
-                <span className={`w-8 text-right font-mono ${i < 3 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                <span className={`w-8 text-right font-mono ${i < 3 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500'}`}>
                   {i + 1}
                 </span>
-                <span className={`flex-1 truncate ${isMe ? 'font-semibold text-emerald-300' : 'text-zinc-200'}`}>
+                <span className={`flex-1 truncate ${isMe ? 'font-semibold text-emerald-300' : 'text-zinc-800 dark:text-zinc-200'}`}>
                   {e.username ?? 'anonymous'}
                 </span>
-                <span className="font-mono text-lg font-bold text-zinc-100">
+                <span className="font-mono text-lg font-bold text-zinc-900 dark:text-zinc-100">
                   {Number(e.wpm).toFixed(0)}
                   <span className="ml-1 text-xs font-normal text-zinc-500">wpm</span>
                 </span>
-                <span className="w-16 text-right text-sm text-zinc-400">
+                <span className="w-16 text-right text-sm text-zinc-500 dark:text-zinc-400">
                   {Number(e.accuracy).toFixed(1)}%
                 </span>
               </motion.li>
