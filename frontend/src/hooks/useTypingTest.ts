@@ -24,10 +24,15 @@ function buildTarget(settings: TestSettings, weakKeys: Record<string, number>): 
   }).join(' ')
 }
 
-export function useTypingTest(settings: TestSettings) {
+export function useTypingTest(
+  settings: TestSettings,
+  /** Persisted miss counts from past sessions (Phase 7) — merged in when they load. */
+  seedWeakKeys?: Record<string, number>,
+) {
   // Miss counts persist across restarts so selection biases toward weak keys.
   const weakKeysRef = useRef<Record<string, number>>({})
   const keystrokesRef = useRef(0)
+  const seededRef = useRef(false)
 
   const [target, setTarget] = useState(() => buildTarget(settings, {}))
   const [charStates, setCharStates] = useState<CharState[]>([])
@@ -50,6 +55,22 @@ export function useTypingTest(settings: TestSettings) {
   useEffect(() => {
     restart()
   }, [restart])
+
+  // Merge persisted weak keys once when they arrive; rebuild words if the
+  // test hasn't started so the bias applies immediately.
+  useEffect(() => {
+    if (seededRef.current || !seedWeakKeys || Object.keys(seedWeakKeys).length === 0) return
+    seededRef.current = true
+    for (const [key, count] of Object.entries(seedWeakKeys)) {
+      weakKeysRef.current[key] = (weakKeysRef.current[key] ?? 0) + count
+    }
+    setStatus((current) => {
+      if (current === 'idle') {
+        setTarget(buildTarget(settings, weakKeysRef.current))
+      }
+      return current
+    })
+  }, [seedWeakKeys, settings])
 
   const finish = useCallback(
     (states: CharState[]) => {

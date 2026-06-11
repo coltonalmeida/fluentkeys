@@ -1,7 +1,7 @@
 import { SignedIn, SignedOut, SignInButton, UserButton, useAuth } from '@clerk/clerk-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { apiRequest, postResult, type User } from './lib/api'
+import { apiRequest, getWeakKeys, postResult, type User } from './lib/api'
 import { Leaderboard } from './components/Leaderboard'
 import { ResultsScreen } from './components/ResultsScreen'
 import { StatsPanel } from './components/StatsPanel'
@@ -17,9 +17,10 @@ function App() {
     difficulty: 'medium',
     duration: 30,
   })
-  const { target, charStates, index, status, timeLeft, stats, handleKey, restart, missCounts } =
-    useTypingTest(settings)
   const { isSignedIn, getToken } = useAuth()
+  const [persistedWeakKeys, setPersistedWeakKeys] = useState<Record<string, number> | undefined>()
+  const { target, charStates, index, status, timeLeft, stats, handleKey, restart, missCounts } =
+    useTypingTest(settings, persistedWeakKeys)
   const [showStats, setShowStats] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [isPersonalBest, setIsPersonalBest] = useState(false)
@@ -28,7 +29,12 @@ function App() {
   useEffect(() => {
     if (!isSignedIn) return
     getToken()
-      .then((token) => apiRequest<{ user: User }>('/auth/me', token))
+      .then(async (token) => {
+        await apiRequest<{ user: User }>('/auth/me', token)
+        // Phase 7: bias word selection toward this user's historical weak keys.
+        const { weakKeys } = await getWeakKeys(token)
+        setPersistedWeakKeys(weakKeys)
+      })
       .catch((err) => console.error('user sync failed:', err))
   }, [isSignedIn, getToken])
 

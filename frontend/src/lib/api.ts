@@ -74,6 +74,9 @@ export const getHistory = (token: string | null) =>
 export const getPersonalBests = (token: string | null) =>
   apiRequest<{ personalBests: PersonalBest[] }>('/personal-bests', token)
 
+export const getWeakKeys = (token: string | null) =>
+  apiRequest<{ weakKeys: Record<string, number> }>('/weak-keys', token)
+
 export interface LeaderboardEntry {
   username: string | null
   wpm: string

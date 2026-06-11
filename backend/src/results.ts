@@ -116,6 +116,35 @@ resultsRouter.get(
   }),
 )
 
+// Aggregated per-key miss counts from the user's recent results.
+// char_counts stores misses as {"miss_<char>": n}; Phase 7 feeds these
+// back into the frontend's weighted word selection.
+resultsRouter.get(
+  '/weak-keys',
+  wrap(async (req, res) => {
+    const { userId: clerkId } = getAuth(req)
+    const user = await upsertUser(clerkId!)
+    const { rows } = await pool.query<{ key: string; misses: string }>(
+      `SELECT kv.key, SUM((kv.value)::numeric)::int AS misses
+       FROM (
+         SELECT char_counts FROM results
+         WHERE user_id = $1
+         ORDER BY created_at DESC
+         LIMIT 50
+       ) recent,
+       LATERAL jsonb_each_text(recent.char_counts) AS kv(key, value)
+       WHERE kv.key LIKE 'miss\\_%' ESCAPE '\\'
+       GROUP BY kv.key`,
+      [user.id],
+    )
+    const weakKeys: Record<string, number> = {}
+    for (const row of rows) {
+      weakKeys[row.key.slice('miss_'.length)] = Number(row.misses)
+    }
+    res.json({ weakKeys })
+  }),
+)
+
 resultsRouter.get(
   '/personal-bests',
   wrap(async (req, res) => {
