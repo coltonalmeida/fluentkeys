@@ -9,7 +9,10 @@ import { resultsRouter } from "./results.js";
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
 
-app.use(cors());
+// In production CORS_ORIGIN must list the deployed frontend origin(s),
+// comma-separated. Unset = allow all (local dev).
+const corsOrigins = process.env.CORS_ORIGIN?.split(",").map((o) => o.trim());
+app.use(cors(corsOrigins ? { origin: corsOrigins } : undefined));
 app.use(express.json());
 // Reads CLERK_SECRET_KEY / CLERK_PUBLISHABLE_KEY from env.
 app.use(clerkMiddleware());
@@ -22,6 +25,6 @@ app.use("/auth", authRouter);
 app.use("/", leaderboardRouter);
 app.use("/", resultsRouter);
 
-app.listen(port, () => {
-  console.log(`fluentkeys backend listening on http://localhost:${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`fluentkeys backend listening on port ${port}`);
 });

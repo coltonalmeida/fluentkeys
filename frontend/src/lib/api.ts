@@ -14,13 +14,17 @@ export class ApiError extends Error {
   }
 }
 
+// In dev this is unset and requests go through Vite's /api proxy. In
+// production builds set VITE_API_URL to the deployed backend origin.
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '/api'
+
 /** Authenticated fetch — pass a Clerk session token from useAuth().getToken(). */
 export async function apiRequest<T>(
   path: string,
   token: string | null,
   options: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
