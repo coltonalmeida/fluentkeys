@@ -1,4 +1,4 @@
-import { clerkClient, getAuth, requireAuth } from '@clerk/express'
+import { clerkClient, getAuth } from '@clerk/express'
 import { Router, type NextFunction, type Request, type Response } from 'express'
 import { pool } from './db.js'
 
@@ -35,12 +35,22 @@ export async function upsertUser(clerkId: string): Promise<AppUser> {
   return user
 }
 
+/** JSON-API auth guard: 401 instead of Clerk's default redirect. */
+export function requireSignedIn(req: Request, res: Response, next: NextFunction): void {
+  const { userId } = getAuth(req)
+  if (!userId) {
+    res.status(401).json({ error: 'Not authenticated' })
+    return
+  }
+  next()
+}
+
 export const authRouter = Router()
 
 // Protected route confirming the Clerk token flow end to end.
 authRouter.get(
   '/me',
-  requireAuth(),
+  requireSignedIn,
   wrap(async (req, res) => {
     const { userId } = getAuth(req)
     if (!userId) {

@@ -1,6 +1,7 @@
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
+import { SignedIn, SignedOut, SignInButton, UserButton, useAuth } from '@clerk/clerk-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { apiRequest, type User } from './lib/api'
 import { ResultsScreen } from './components/ResultsScreen'
 import { TypingArea } from './components/TypingArea'
 import { useTypingTest, type TestSettings } from './hooks/useTypingTest'
@@ -16,6 +17,16 @@ function App() {
   })
   const { target, charStates, index, status, timeLeft, stats, handleKey, restart } =
     useTypingTest(settings)
+  const { isSignedIn, getToken } = useAuth()
+
+  // Sync our users row on sign-in (backend upserts by clerk_id).
+  useEffect(() => {
+    if (!isSignedIn) return
+    getToken()
+      .then((token) => apiRequest<{ user: User }>('/auth/me', token))
+      .catch((err) => console.error('user sync failed:', err))
+  }, [isSignedIn, getToken])
+
   return (
     <div className="min-h-screen bg-zinc-900 text-zinc-100">
       <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-12">
