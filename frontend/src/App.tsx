@@ -5,7 +5,7 @@ import { TypingArea } from './components/TypingArea'
 import { useTypingTest, type TestSettings } from './hooks/useTypingTest'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from './lib/words'
 
-const DURATIONS = [15, 30, 60] as const
+const DURATIONS = [5, 15, 30, 60] as const
 
 function App() {
   const [settings, setSettings] = useState<TestSettings>({
