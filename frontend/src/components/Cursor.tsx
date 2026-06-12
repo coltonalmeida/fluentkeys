@@ -37,7 +37,7 @@ export function Cursor() {
     <div
       ref={ref}
       aria-hidden
-      className="app-cursor pointer-events-none fixed left-0 top-0 z-50 h-5 w-5 rounded-full opacity-0"
+      className="app-cursor pointer-events-none fixed left-0 top-0 z-50 h-3.5 w-3.5 rounded-full opacity-0"
       style={{ willChange: 'transform' }}
     />
   )
