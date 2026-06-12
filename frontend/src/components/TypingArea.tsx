@@ -44,6 +44,7 @@ export function TypingArea({ target, charStates, index, onKey }: TypingAreaProps
   // Clerk modals) and shortcut chords.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return // holding a key types it only once
       if (e.ctrlKey || e.metaKey || e.altKey) return
       const t = e.target as HTMLElement | null
       if (t?.closest('input, select, textarea, button, [contenteditable="true"]')) return
