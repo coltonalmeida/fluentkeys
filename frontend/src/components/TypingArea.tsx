@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import type { CharState } from '../hooks/useTypingTest'
 
 interface TypingAreaProps {
@@ -39,17 +39,26 @@ export function TypingArea({ target, charStates, index, onKey }: TypingAreaProps
     span.scrollIntoView({ block: 'nearest' })
   }, [index, target])
 
+  // Capture keystrokes globally so typing works without clicking the text
+  // first. Skip events aimed at real form controls (settings dropdowns,
+  // Clerk modals) and shortcut chords.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const t = e.target as HTMLElement | null
+      if (t?.closest('input, select, textarea, button, [contenteditable="true"]')) return
+      if (e.key.length !== 1 && e.key !== 'Backspace') return
+      e.preventDefault()
+      onKey(e.key)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onKey])
+
   return (
     <div
       ref={containerRef}
-      tabIndex={0}
-      autoFocus
-      onKeyDown={(e) => {
-        if (e.key === 'Tab') return
-        e.preventDefault()
-        onKey(e.key)
-      }}
-      className="relative max-h-40 overflow-hidden rounded-lg bg-zinc-200/60 dark:bg-zinc-800/50 p-6 font-mono text-2xl leading-relaxed tracking-wide outline-none focus:ring-2 focus:ring-emerald-500/50"
+      className="relative max-h-40 overflow-hidden rounded-lg bg-zinc-200/60 dark:bg-zinc-800/50 p-6 font-mono text-2xl leading-relaxed tracking-wide"
     >
       <div
         ref={caretRef}
