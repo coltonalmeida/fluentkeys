@@ -2,13 +2,14 @@ import { SignedIn, SignedOut, SignInButton, UserButton, useAuth } from '@clerk/c
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { apiRequest, getWeakKeys, postResult, type User } from './lib/api'
+import { Cursor } from './components/Cursor'
 import { KeyboardVisual } from './components/KeyboardVisual'
 import { Leaderboard } from './components/Leaderboard'
 import { ResultsScreen } from './components/ResultsScreen'
 import { StatsPanel } from './components/StatsPanel'
 import { ThemeToggle } from './components/ThemeToggle'
 import { TypingArea } from './components/TypingArea'
-import { Unboxing } from './components/Unboxing'
+import { BoxLid } from './components/Unboxing'
 import { useTheme } from './hooks/useTheme'
 import { useTypingTest, type TestSettings } from './hooks/useTypingTest'
 import { CHAR_TO_KEY } from './lib/keyboard'
@@ -44,6 +45,7 @@ function App() {
 
   // Wrong keypresses flash the offending key on the visual keyboard.
   const handleTestKey = (key: string) => {
+    if (!introDone) return // no typing while the box is still on
     if (showPractice && key.length === 1 && key !== target[index]) {
       const pressed = CHAR_TO_KEY[key]
       if (pressed) {
@@ -97,23 +99,19 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per finish
   }, [status])
 
-  if (!introDone) {
-    return (
-      <div className="min-h-screen bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
-        <Unboxing onDone={() => setIntroDone(true)} />
-      </div>
-    )
+  // While the lid is on, the rest of the UI is laid out but invisible; it
+  // bleeds in around the keyboard, which never unmounts.
+  const bleedIn = {
+    initial: { opacity: 0, y: 8 },
+    animate: introDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 },
+    transition: { duration: 0.6 },
   }
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
-      <motion.div
-        className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-12"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <header className="flex items-center justify-between">
+      <Cursor />
+      <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-12">
+        <motion.header {...bleedIn} className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">FluentKeys</h1>
           <div className="flex items-center gap-6">
             <span className="font-mono text-2xl tabular-nums text-zinc-500 dark:text-zinc-400">
@@ -143,10 +141,10 @@ function App() {
             </SignedIn>
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
-        </header>
+        </motion.header>
 
         {/* Settings */}
-        <div className="flex flex-wrap gap-4 text-sm">
+        <motion.div {...bleedIn} className="flex flex-wrap gap-4 text-sm">
           <Selector
             label="Keys"
             value={settings.keySet}
@@ -165,8 +163,9 @@ function App() {
             options={DURATIONS.map((d) => [String(d), `${d}s`])}
             onChange={(v) => setSettings((s) => ({ ...s, duration: Number(v) }))}
           />
-        </div>
+        </motion.div>
 
+        <motion.div {...bleedIn}>
         <AnimatePresence mode="wait">
           {status === 'finished' && stats ? (
             <motion.div
@@ -189,23 +188,32 @@ function App() {
             </motion.div>
           )}
         </AnimatePresence>
+        </motion.div>
 
-        {/* Practice: the visual keyboard guides the main test. */}
+        {/* Practice: the visual keyboard guides the main test. The unboxing
+            lid sits on top of it and lifts away without remounting it. */}
         {showPractice && status !== 'finished' && (
-          <KeyboardVisual nextChar={target[index] ?? null} flashKeyId={flashKeyId} />
+          <div className="relative self-center">
+            <KeyboardVisual
+              nextChar={introDone ? (target[index] ?? null) : null}
+              flashKeyId={flashKeyId}
+              showInfo={introDone}
+            />
+            {!introDone && <BoxLid onDone={() => setIntroDone(true)} />}
+          </div>
         )}
 
-        <p className="text-center text-sm text-zinc-500 dark:text-zinc-600">
+        <motion.p {...bleedIn} className="text-center text-sm text-zinc-500 dark:text-zinc-600">
           {status === 'idle'
             ? showPractice
               ? 'Click the text and start typing — the lit key shows the next character'
               : 'Click the text and start typing to begin'
             : ' '}
-        </p>
+        </motion.p>
 
         {showLeaderboard && <Leaderboard />}
         {showStats && isSignedIn && <StatsPanel />}
-      </motion.div>
+      </div>
     </div>
   )
 }

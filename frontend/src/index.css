@@ -27,3 +27,23 @@
 body {
   font-family: var(--font-sans);
 }
+
+/* Custom circular cursor: hide the native one on precise pointers only. */
+@media (pointer: fine) {
+  * {
+    cursor: none !important;
+  }
+}
+
+.app-cursor {
+  /* light theme: light gradient with a dark edge so it reads on pale UI */
+  background: radial-gradient(circle at 30% 30%, #fafafa, #a1a1aa);
+  box-shadow: 0 0 0 1.5px rgba(24, 24, 27, 0.55);
+  transition: opacity 150ms ease;
+}
+
+.dark .app-cursor {
+  /* dark theme: dark gradient with a light edge */
+  background: radial-gradient(circle at 30% 30%, #52525b, #18181b);
+  box-shadow: 0 0 0 1.5px rgba(244, 244, 245, 0.55);
+}
