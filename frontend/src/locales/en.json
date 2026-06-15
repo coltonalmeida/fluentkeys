@@ -1,0 +1,65 @@
+{
+  "common": {
+    "appName": "FluentKeys",
+    "loading": "Loading…",
+    "save": "Save",
+    "reset": "Reset to defaults",
+    "saved": "Saved"
+  },
+  "nav": {
+    "practice": "Practice",
+    "timedTest": "Timed test",
+    "settings": "Settings",
+    "profile": "Profile",
+    "leaderboard": "Leaderboard",
+    "help": "Help"
+  },
+  "header": {
+    "login": "Log in",
+    "myStats": "My stats"
+  },
+  "practice": {
+    "keys": "Keys",
+    "difficulty": "Difficulty",
+    "time": "Time",
+    "hintPractice": "Click the text and start typing — the lit key shows the next character",
+    "hintPlain": "Click the text and start typing to begin"
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "keyboard": "Keyboard",
+    "language": "Language",
+    "account": "Account",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "font": "Test font",
+    "fontHint": "Applies to the typing box only, not the rest of the interface.",
+    "fontPreview": "the quick brown fox jumps over the lazy dog",
+    "layout": "Keyboard layout",
+    "layoutHint": "Changes the on-screen keyboard and finger guides.",
+    "uiLanguage": "Interface language",
+    "uiLanguageHint": "Typing tests always stay in English.",
+    "resetSection": "Reset this section",
+    "accountGuest": "You're not signed in. Preferences are saved on this device.",
+    "accountSynced": "Signed in — preferences sync to your profile."
+  },
+  "profile": {
+    "title": "Profile",
+    "signInPrompt": "Sign in to see your stats, history, and personal bests."
+  },
+  "leaderboard": {
+    "title": "Leaderboard"
+  },
+  "help": {
+    "title": "How it works",
+    "intro": "FluentKeys is a typing trainer. Take a timed test, see your words-per-minute and accuracy, and watch the on-screen keyboard light up the next key as you go.",
+    "weightingTitle": "Smart word selection",
+    "weighting": "Words are chosen from static lists — no AI. The selector biases toward the keys you miss most, so practice keeps targeting your weak spots.",
+    "layoutTitle": "Layouts & fonts",
+    "layout": "Pick your physical keyboard layout and a test font in Settings. The finger-colour guides follow the layout you choose.",
+    "accountTitle": "Accounts",
+    "account": "Sign in to save results, track personal bests, and climb the leaderboard. You can practise without an account too."
+  }
+}

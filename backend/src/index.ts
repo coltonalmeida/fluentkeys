@@ -5,6 +5,7 @@ import express from "express";
 import { authRouter } from "./auth.js";
 import { leaderboardRouter } from "./leaderboard.js";
 import { resultsRouter } from "./results.js";
+import { trainingRouter } from "./training.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
@@ -24,6 +25,7 @@ app.get("/health", (_req, res) => {
 app.use("/auth", authRouter);
 app.use("/", leaderboardRouter);
 app.use("/", resultsRouter);
+app.use("/", trainingRouter);
 
 app.listen(port, "0.0.0.0", () => {
   console.log(`fluentkeys backend listening on port ${port}`);

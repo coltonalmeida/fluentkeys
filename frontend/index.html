@@ -5,11 +5,39 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FluentKeys</title>
+
+    <!-- Selectable test fonts (applied to the typing box only). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Fira+Code:wght@400;500&family=IBM+Plex+Mono:wght@400;500&family=Source+Code+Pro:wght@400;500&display=swap"
+    />
+
     <script>
-      // Apply the saved theme before first paint (default: dark).
-      if (localStorage.getItem('fluentkeys-theme') !== 'light') {
-        document.documentElement.classList.add('dark')
-      }
+      // Hydrate preferences before first paint so there's no flash of the
+      // default theme/font. Falls back to the legacy theme key if present.
+      ;(function () {
+        var fontStacks = {
+          'roboto-mono': "'Roboto Mono', ui-monospace, monospace",
+          'jetbrains-mono': "'JetBrains Mono', ui-monospace, monospace",
+          'fira-code': "'Fira Code', ui-monospace, monospace",
+          'ibm-plex-mono': "'IBM Plex Mono', ui-monospace, monospace",
+          'source-code-pro': "'Source Code Pro', ui-monospace, monospace",
+        }
+        var prefs = {}
+        try {
+          prefs = JSON.parse(localStorage.getItem('fluentkeys-preferences') || '{}') || {}
+        } catch (e) {}
+        var legacyTheme = localStorage.getItem('fluentkeys-theme')
+        var theme = prefs.theme || (legacyTheme === 'light' ? 'light' : 'dark')
+        if (theme !== 'light') document.documentElement.classList.add('dark')
+        document.documentElement.style.setProperty(
+          '--font-test',
+          fontStacks[prefs.font] || fontStacks['roboto-mono'],
+        )
+        if (prefs.language) document.documentElement.lang = prefs.language
+      })()
     </script>
   </head>
   <body>

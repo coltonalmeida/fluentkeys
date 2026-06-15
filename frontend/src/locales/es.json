@@ -1,0 +1,65 @@
+{
+  "common": {
+    "appName": "FluentKeys",
+    "loading": "Cargando…",
+    "save": "Guardar",
+    "reset": "Restablecer valores",
+    "saved": "Guardado"
+  },
+  "nav": {
+    "practice": "Práctica",
+    "timedTest": "Prueba cronometrada",
+    "settings": "Ajustes",
+    "profile": "Perfil",
+    "leaderboard": "Clasificación",
+    "help": "Ayuda"
+  },
+  "header": {
+    "login": "Iniciar sesión",
+    "myStats": "Mis estadísticas"
+  },
+  "practice": {
+    "keys": "Teclas",
+    "difficulty": "Dificultad",
+    "time": "Tiempo",
+    "hintPractice": "Haz clic en el texto y empieza a escribir: la tecla iluminada muestra el siguiente carácter",
+    "hintPlain": "Haz clic en el texto y empieza a escribir para comenzar"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "appearance": "Apariencia",
+    "keyboard": "Teclado",
+    "language": "Idioma",
+    "account": "Cuenta",
+    "theme": "Tema",
+    "themeLight": "Claro",
+    "themeDark": "Oscuro",
+    "font": "Fuente de la prueba",
+    "fontHint": "Se aplica solo a la caja de escritura, no al resto de la interfaz.",
+    "fontPreview": "el veloz murciélago hindú comía feliz cardillo y kiwi",
+    "layout": "Distribución del teclado",
+    "layoutHint": "Cambia el teclado en pantalla y las guías de dedos.",
+    "uiLanguage": "Idioma de la interfaz",
+    "uiLanguageHint": "Las pruebas de escritura siempre están en inglés.",
+    "resetSection": "Restablecer esta sección",
+    "accountGuest": "No has iniciado sesión. Las preferencias se guardan en este dispositivo.",
+    "accountSynced": "Sesión iniciada: las preferencias se sincronizan con tu perfil."
+  },
+  "profile": {
+    "title": "Perfil",
+    "signInPrompt": "Inicia sesión para ver tus estadísticas, historial y mejores marcas."
+  },
+  "leaderboard": {
+    "title": "Clasificación"
+  },
+  "help": {
+    "title": "Cómo funciona",
+    "intro": "FluentKeys es un entrenador de mecanografía. Haz una prueba cronometrada, mira tus palabras por minuto y tu precisión, y observa cómo el teclado en pantalla ilumina la siguiente tecla.",
+    "weightingTitle": "Selección inteligente de palabras",
+    "weighting": "Las palabras se eligen de listas estáticas, sin IA. El selector da prioridad a las teclas que más fallas, para que la práctica siga apuntando a tus puntos débiles.",
+    "layoutTitle": "Distribuciones y fuentes",
+    "layout": "Elige la distribución física de tu teclado y una fuente de prueba en Ajustes. Las guías de color de dedos siguen la distribución que elijas.",
+    "accountTitle": "Cuentas",
+    "account": "Inicia sesión para guardar resultados, registrar mejores marcas y subir en la clasificación. También puedes practicar sin cuenta."
+  }
+}

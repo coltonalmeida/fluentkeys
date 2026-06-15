@@ -1,0 +1,65 @@
+{
+  "common": {
+    "appName": "FluentKeys",
+    "loading": "A carregar…",
+    "save": "Guardar",
+    "reset": "Repor predefinições",
+    "saved": "Guardado"
+  },
+  "nav": {
+    "practice": "Prática",
+    "timedTest": "Teste cronometrado",
+    "settings": "Definições",
+    "profile": "Perfil",
+    "leaderboard": "Classificação",
+    "help": "Ajuda"
+  },
+  "header": {
+    "login": "Iniciar sessão",
+    "myStats": "As minhas estatísticas"
+  },
+  "practice": {
+    "keys": "Teclas",
+    "difficulty": "Dificuldade",
+    "time": "Tempo",
+    "hintPractice": "Clique no texto e comece a escrever — a tecla iluminada mostra o próximo carácter",
+    "hintPlain": "Clique no texto e comece a escrever para iniciar"
+  },
+  "settings": {
+    "title": "Definições",
+    "appearance": "Aparência",
+    "keyboard": "Teclado",
+    "language": "Idioma",
+    "account": "Conta",
+    "theme": "Tema",
+    "themeLight": "Claro",
+    "themeDark": "Escuro",
+    "font": "Tipo de letra do teste",
+    "fontHint": "Aplica-se apenas à caixa de escrita, não ao resto da interface.",
+    "fontPreview": "um pequeno jabuti xereta viu dez cegonhas felizes",
+    "layout": "Disposição do teclado",
+    "layoutHint": "Altera o teclado no ecrã e os guias de dedos.",
+    "uiLanguage": "Idioma da interface",
+    "uiLanguageHint": "Os testes de escrita ficam sempre em inglês.",
+    "resetSection": "Repor esta secção",
+    "accountGuest": "Sessão não iniciada. As preferências são guardadas neste dispositivo.",
+    "accountSynced": "Sessão iniciada — as preferências sincronizam com o seu perfil."
+  },
+  "profile": {
+    "title": "Perfil",
+    "signInPrompt": "Inicie sessão para ver as suas estatísticas, histórico e melhores marcas."
+  },
+  "leaderboard": {
+    "title": "Classificação"
+  },
+  "help": {
+    "title": "Como funciona",
+    "intro": "O FluentKeys é um treinador de digitação. Faça um teste cronometrado, veja as suas palavras por minuto e a precisão, e veja o teclado no ecrã iluminar a próxima tecla.",
+    "weightingTitle": "Seleção inteligente de palavras",
+    "weighting": "As palavras vêm de listas estáticas, sem IA. O seletor dá prioridade às teclas em que erra mais, para a prática continuar a focar os seus pontos fracos.",
+    "layoutTitle": "Disposições e tipos de letra",
+    "layout": "Escolha a disposição física do teclado e um tipo de letra de teste nas Definições. Os guias de cor dos dedos seguem a disposição escolhida.",
+    "accountTitle": "Contas",
+    "account": "Inicie sessão para guardar resultados, registar melhores marcas e subir na classificação. Também pode praticar sem conta."
+  }
+}

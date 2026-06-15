@@ -81,6 +81,52 @@ export const getPersonalBests = (token: string | null) =>
 export const getWeakKeys = (token: string | null) =>
   apiRequest<{ weakKeys: Record<string, number> }>('/weak-keys', token)
 
+// Preferences sync (optional): the profile mirrors localStorage for signed-in
+// users. `preferences` is null until the user has saved any.
+export const getPreferences = (token: string | null) =>
+  apiRequest<{ preferences: unknown | null }>('/auth/preferences', token)
+
+export const putPreferences = (token: string | null, preferences: unknown) =>
+  apiRequest<{ preferences: unknown }>('/auth/preferences', token, {
+    method: 'PUT',
+    body: JSON.stringify({ preferences }),
+  })
+
+// Letter-strength trainer sync. localStorage is the always-available store;
+// this mirrors it to the cloud DB for signed-in users (cross-device).
+export interface TrainingSample {
+  key: string
+  correct: boolean
+  reactionMs: number
+  timestamp: number
+}
+
+export interface TrainingStateResponse {
+  unlockedCount: number
+  windows: Record<string, TrainingSample[]>
+}
+
+export interface TrainingSessionPayload {
+  unlockedCount: number
+  letters: { letter: string; strength: number; samples: TrainingSample[] }[]
+  session: {
+    wordsTyped: number
+    peakWpm: number
+    avgAccuracy: number
+    newUnlocks: string[]
+    startedAt: number
+  }
+}
+
+export const getTrainingState = (token: string | null) =>
+  apiRequest<TrainingStateResponse>('/training/state', token)
+
+export const postTrainingSession = (token: string | null, payload: TrainingSessionPayload) =>
+  apiRequest<{ ok: boolean }>('/training/session', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
 export interface LeaderboardEntry {
   username: string | null
   wpm: string

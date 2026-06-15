@@ -59,7 +59,10 @@ export function TypingArea({ target, charStates, index, onKey }: TypingAreaProps
   return (
     <div
       ref={containerRef}
-      className="relative max-h-40 overflow-hidden rounded-lg bg-zinc-200/60 dark:bg-zinc-800/50 p-6 font-mono text-2xl leading-relaxed tracking-wide"
+      // Font comes from user preferences (--font-test); the rest of the UI
+      // stays in Nunito.
+      style={{ fontFamily: 'var(--font-test)' }}
+      className="relative max-h-40 overflow-hidden rounded-lg bg-zinc-200/60 dark:bg-zinc-800/50 p-6 text-2xl leading-relaxed tracking-wide"
     >
       <div
         ref={caretRef}

@@ -1,0 +1,65 @@
+{
+  "common": {
+    "appName": "FluentKeys",
+    "loading": "Chargement…",
+    "save": "Enregistrer",
+    "reset": "Réinitialiser",
+    "saved": "Enregistré"
+  },
+  "nav": {
+    "practice": "Entraînement",
+    "timedTest": "Test chronométré",
+    "settings": "Réglages",
+    "profile": "Profil",
+    "leaderboard": "Classement",
+    "help": "Aide"
+  },
+  "header": {
+    "login": "Se connecter",
+    "myStats": "Mes statistiques"
+  },
+  "practice": {
+    "keys": "Touches",
+    "difficulty": "Difficulté",
+    "time": "Durée",
+    "hintPractice": "Cliquez sur le texte et commencez à taper — la touche allumée indique le caractère suivant",
+    "hintPlain": "Cliquez sur le texte et commencez à taper pour démarrer"
+  },
+  "settings": {
+    "title": "Réglages",
+    "appearance": "Apparence",
+    "keyboard": "Clavier",
+    "language": "Langue",
+    "account": "Compte",
+    "theme": "Thème",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "font": "Police du test",
+    "fontHint": "S'applique uniquement à la zone de saisie, pas au reste de l'interface.",
+    "fontPreview": "portez ce vieux whisky au juge blond qui fume",
+    "layout": "Disposition du clavier",
+    "layoutHint": "Modifie le clavier à l'écran et les guides de doigts.",
+    "uiLanguage": "Langue de l'interface",
+    "uiLanguageHint": "Les tests de frappe restent toujours en anglais.",
+    "resetSection": "Réinitialiser cette section",
+    "accountGuest": "Vous n'êtes pas connecté. Les préférences sont enregistrées sur cet appareil.",
+    "accountSynced": "Connecté — les préférences sont synchronisées avec votre profil."
+  },
+  "profile": {
+    "title": "Profil",
+    "signInPrompt": "Connectez-vous pour voir vos statistiques, votre historique et vos records."
+  },
+  "leaderboard": {
+    "title": "Classement"
+  },
+  "help": {
+    "title": "Comment ça marche",
+    "intro": "FluentKeys est un entraîneur de frappe. Faites un test chronométré, consultez vos mots par minute et votre précision, et regardez le clavier à l'écran allumer la touche suivante.",
+    "weightingTitle": "Sélection intelligente des mots",
+    "weighting": "Les mots proviennent de listes statiques, sans IA. Le sélecteur privilégie les touches que vous ratez le plus, pour cibler vos points faibles.",
+    "layoutTitle": "Dispositions et polices",
+    "layout": "Choisissez la disposition physique de votre clavier et une police de test dans les Réglages. Les guides de couleur des doigts suivent la disposition choisie.",
+    "accountTitle": "Comptes",
+    "account": "Connectez-vous pour enregistrer vos résultats, suivre vos records et grimper au classement. Vous pouvez aussi vous entraîner sans compte."
+  }
+}

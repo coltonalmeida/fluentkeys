@@ -28,6 +28,12 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Font used in the typing test box only — set from user preferences (and by
+   the pre-render bootstrap in index.html). The UI chrome stays in Nunito. */
+:root {
+  --font-test: 'Roboto Mono', ui-monospace, monospace;
+}
+
 /* Custom circular cursor: hide the native one on precise pointers only. */
 @media (pointer: fine) {
   * {
@@ -46,4 +52,19 @@ body {
   /* dark theme: dark gradient with a light edge */
   background: radial-gradient(circle at 30% 30%, #52525b, #18181b);
   box-shadow: 0 0 0 1.5px rgba(244, 244, 245, 0.55);
+}
+
+/* Newly unlocked key: an emerald glow that pulses for ~2s (trainer, spec §6.2). */
+@keyframes key-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.55);
+  }
+}
+
+.key-pulse {
+  animation: key-pulse 0.8s ease-in-out 3;
 }

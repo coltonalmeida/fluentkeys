@@ -1,0 +1,65 @@
+{
+  "common": {
+    "appName": "FluentKeys",
+    "loading": "Wird geladen…",
+    "save": "Speichern",
+    "reset": "Auf Standard zurücksetzen",
+    "saved": "Gespeichert"
+  },
+  "nav": {
+    "practice": "Üben",
+    "timedTest": "Zeittest",
+    "settings": "Einstellungen",
+    "profile": "Profil",
+    "leaderboard": "Bestenliste",
+    "help": "Hilfe"
+  },
+  "header": {
+    "login": "Anmelden",
+    "myStats": "Meine Statistiken"
+  },
+  "practice": {
+    "keys": "Tasten",
+    "difficulty": "Schwierigkeit",
+    "time": "Zeit",
+    "hintPractice": "Klicke auf den Text und tippe los — die leuchtende Taste zeigt das nächste Zeichen",
+    "hintPlain": "Klicke auf den Text und tippe los, um zu beginnen"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "appearance": "Darstellung",
+    "keyboard": "Tastatur",
+    "language": "Sprache",
+    "account": "Konto",
+    "theme": "Design",
+    "themeLight": "Hell",
+    "themeDark": "Dunkel",
+    "font": "Testschrift",
+    "fontHint": "Gilt nur für das Tippfeld, nicht für die übrige Oberfläche.",
+    "fontPreview": "zwölf boxkämpfer jagen viktor quer über den großen sylter deich",
+    "layout": "Tastaturbelegung",
+    "layoutHint": "Ändert die Bildschirmtastatur und die Fingerführung.",
+    "uiLanguage": "Oberflächensprache",
+    "uiLanguageHint": "Tipptests bleiben immer auf Englisch.",
+    "resetSection": "Diesen Bereich zurücksetzen",
+    "accountGuest": "Nicht angemeldet. Einstellungen werden auf diesem Gerät gespeichert.",
+    "accountSynced": "Angemeldet — Einstellungen werden mit deinem Profil synchronisiert."
+  },
+  "profile": {
+    "title": "Profil",
+    "signInPrompt": "Melde dich an, um Statistiken, Verlauf und persönliche Bestleistungen zu sehen."
+  },
+  "leaderboard": {
+    "title": "Bestenliste"
+  },
+  "help": {
+    "title": "So funktioniert es",
+    "intro": "FluentKeys ist ein Tipptrainer. Mach einen Test auf Zeit, sieh deine Wörter pro Minute und Genauigkeit, und beobachte, wie die Bildschirmtastatur die nächste Taste hervorhebt.",
+    "weightingTitle": "Intelligente Wortauswahl",
+    "weighting": "Wörter stammen aus statischen Listen — keine KI. Die Auswahl bevorzugt die Tasten, die du am häufigsten verfehlst, sodass das Üben deine Schwachstellen anvisiert.",
+    "layoutTitle": "Belegungen & Schriften",
+    "layout": "Wähle in den Einstellungen deine physische Tastaturbelegung und eine Testschrift. Die Finger-Farbführung folgt der gewählten Belegung.",
+    "accountTitle": "Konten",
+    "account": "Melde dich an, um Ergebnisse zu speichern, Bestleistungen zu verfolgen und in der Bestenliste aufzusteigen. Üben geht auch ohne Konto."
+  }
+}

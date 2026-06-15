@@ -141,21 +141,22 @@ export interface CharTarget {
   finger: Finger
 }
 
-/** Maps every typeable character to its physical key and whether Shift is needed. */
-export const CHAR_TO_KEY: Readonly<Record<string, CharTarget>> = (() => {
+/** Derives the character→key map for a set of physical key rows. */
+function buildCharToKey(rows: KeyDef[][]): Record<string, CharTarget> {
   const map: Record<string, CharTarget> = {}
-  for (const row of KEY_ROWS) {
+  for (const row of rows) {
     for (const key of row) {
       if (key.modifier) continue
       if (key.id === 'space') {
         map[' '] = { keyId: key.id, shift: false, finger: key.finger }
         continue
       }
-      if (/^[a-z]$/.test(key.id)) {
-        map[key.id] = { keyId: key.id, shift: false, finger: key.finger }
-        map[key.id.toUpperCase()] = { keyId: key.id, shift: true, finger: key.finger }
+      const lower = key.legend.toLowerCase()
+      if (/^[a-z]$/.test(lower)) {
+        map[lower] = { keyId: key.id, shift: false, finger: key.finger }
+        map[lower.toUpperCase()] = { keyId: key.id, shift: true, finger: key.finger }
       } else {
-        map[key.id] = { keyId: key.id, shift: false, finger: key.finger }
+        map[key.legend] = { keyId: key.id, shift: false, finger: key.finger }
         if (key.shiftLegend) {
           map[key.shiftLegend] = { keyId: key.id, shift: true, finger: key.finger }
         }
@@ -163,7 +164,126 @@ export const CHAR_TO_KEY: Readonly<Record<string, CharTarget>> = (() => {
     }
   }
   return map
-})()
+}
+
+// ---------------------------------------------------------------------------
+// Alternate keyboard layouts
+//
+// Every layout reuses the QWERTY *physical* frame above (key positions, widths,
+// finger assignments, home-row bumps). Only the legends printed on the three
+// letter/punctuation rows change — the standard way to model Dvorak/Colemak/
+// Workman/AZERTY on a single ANSI chassis. Finger color assignments therefore
+// stay tied to the physical key, exactly as a real keyboard behaves.
+// ---------------------------------------------------------------------------
+
+export type LayoutId = 'qwerty' | 'dvorak' | 'colemak' | 'workman' | 'azerty'
+
+export const KEYBOARD_LAYOUTS: Record<LayoutId, { label: string }> = {
+  qwerty: { label: 'QWERTY' },
+  dvorak: { label: 'Dvorak' },
+  colemak: { label: 'Colemak' },
+  workman: { label: 'Workman' },
+  azerty: { label: 'AZERTY' },
+}
+
+// Physical position ids (QWERTY) for the three rows whose legends a layout may
+// move. The number row and modifier keys are identical across these layouts.
+const ROW_TOP_IDS = ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']'] as const
+const ROW_HOME_IDS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', "'"] as const
+const ROW_BOTTOM_IDS = ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/'] as const
+
+interface LayoutLegends {
+  top: string[]
+  home: string[]
+  bottom: string[]
+}
+
+// Each entry lists the legend shown at the position ids above, in order.
+const LAYOUT_LEGENDS: Record<LayoutId, LayoutLegends> = {
+  qwerty: {
+    top: ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']'],
+    home: ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', "'"],
+    bottom: ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/'],
+  },
+  dvorak: {
+    top: ["'", ',', '.', 'p', 'y', 'f', 'g', 'c', 'r', 'l', '/', '='],
+    home: ['a', 'o', 'e', 'u', 'i', 'd', 'h', 't', 'n', 's', '-'],
+    bottom: [';', 'q', 'j', 'k', 'x', 'b', 'm', 'w', 'v', 'z'],
+  },
+  colemak: {
+    top: ['q', 'w', 'f', 'p', 'g', 'j', 'l', 'u', 'y', ';', '[', ']'],
+    home: ['a', 'r', 's', 't', 'd', 'h', 'n', 'e', 'i', 'o', "'"],
+    bottom: ['z', 'x', 'c', 'v', 'b', 'k', 'm', ',', '.', '/'],
+  },
+  workman: {
+    top: ['q', 'd', 'r', 'w', 'b', 'j', 'f', 'u', 'p', ';', '[', ']'],
+    home: ['a', 's', 'h', 't', 'g', 'y', 'n', 'e', 'o', 'i', "'"],
+    bottom: ['z', 'x', 'm', 'c', 'v', 'k', 'l', ',', '.', '/'],
+  },
+  azerty: {
+    top: ['a', 'z', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']'],
+    home: ['q', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'ù'],
+    bottom: ['w', 'x', 'c', 'v', 'b', 'n', ',', ';', ':', '!'],
+  },
+}
+
+// Shift symbols for punctuation that moves between layouts. Letters derive their
+// shift legend (the uppercase form) automatically.
+const PUNCT_SHIFT: Record<string, string> = {
+  ';': ':',
+  "'": '"',
+  ',': '<',
+  '.': '>',
+  '/': '?',
+  '[': '{',
+  ']': '}',
+  '-': '_',
+  '=': '+',
+  '`': '~',
+}
+
+function legendFor(raw: string): { legend: string; shiftLegend?: string } {
+  if (/^[a-z]$/.test(raw)) return { legend: raw.toUpperCase() }
+  return { legend: raw, shiftLegend: PUNCT_SHIFT[raw] }
+}
+
+/** Clones the QWERTY frame and repaints the legends for the given layout. */
+function applyLegends(layoutId: LayoutId): KeyDef[][] {
+  const legends = LAYOUT_LEGENDS[layoutId]
+  const override = new Map<string, string>()
+  ROW_TOP_IDS.forEach((id, i) => override.set(id, legends.top[i]!))
+  ROW_HOME_IDS.forEach((id, i) => override.set(id, legends.home[i]!))
+  ROW_BOTTOM_IDS.forEach((id, i) => override.set(id, legends.bottom[i]!))
+
+  return KEY_ROWS.map((row) =>
+    row.map((key) => {
+      const raw = override.get(key.id)
+      if (raw === undefined) return key // number row + modifiers are constant
+      return { ...key, ...legendFor(raw) }
+    }),
+  )
+}
+
+export interface KeyboardLayout {
+  id: LayoutId
+  rows: KeyDef[][]
+  charToKey: Readonly<Record<string, CharTarget>>
+}
+
+const LAYOUT_CACHE = new Map<LayoutId, KeyboardLayout>()
+
+/** Physical frame + character map for a layout, built once and memoized. */
+export function getLayout(id: LayoutId): KeyboardLayout {
+  const cached = LAYOUT_CACHE.get(id)
+  if (cached) return cached
+  const rows = applyLegends(id)
+  const layout: KeyboardLayout = { id, rows, charToKey: buildCharToKey(rows) }
+  LAYOUT_CACHE.set(id, layout)
+  return layout
+}
+
+/** Maps every typeable character to its physical key (QWERTY default). */
+export const CHAR_TO_KEY: Readonly<Record<string, CharTarget>> = getLayout('qwerty').charToKey
 
 /** The Shift key pressed by the hand opposite to the one typing the character. */
 export function shiftKeyFor(finger: Finger): string {

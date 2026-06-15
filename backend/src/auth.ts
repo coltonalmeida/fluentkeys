@@ -61,3 +61,36 @@ authRouter.get(
     res.json({ user })
   }),
 )
+
+// UI preferences sync. localStorage is the client's source of truth; this
+// mirrors it so the same account looks the same on every device. The blob is
+// stored opaquely — the frontend validates/normalizes shape on read.
+authRouter.get(
+  '/preferences',
+  requireSignedIn,
+  wrap(async (req, res) => {
+    const { userId } = getAuth(req)
+    const user = await upsertUser(userId!)
+    const { rows } = await pool.query<{ preferences: unknown | null }>(
+      `SELECT preferences FROM users WHERE id = $1`,
+      [user.id],
+    )
+    res.json({ preferences: rows[0]?.preferences ?? null })
+  }),
+)
+
+authRouter.put(
+  '/preferences',
+  requireSignedIn,
+  wrap(async (req, res) => {
+    const preferences = (req.body as { preferences?: unknown })?.preferences
+    if (typeof preferences !== 'object' || preferences === null || Array.isArray(preferences)) {
+      res.status(400).json({ error: 'Invalid preferences' })
+      return
+    }
+    const { userId } = getAuth(req)
+    const user = await upsertUser(userId!)
+    await pool.query(`UPDATE users SET preferences = $1 WHERE id = $2`, [preferences, user.id])
+    res.json({ preferences })
+  }),
+)
