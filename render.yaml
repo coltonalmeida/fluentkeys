@@ -27,10 +27,6 @@ services:
       # is live; until then the API allows all origins.
       - key: CORS_ORIGIN
         sync: false
-      # Optional — leaderboard cache only; the app degrades to Postgres
-      # without it. Point at a Render Key Value instance if you add one.
-      - key: REDIS_URL
-        sync: false
 
 databases:
   - name: fluentkeys-db

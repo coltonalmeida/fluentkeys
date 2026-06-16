@@ -2,7 +2,6 @@ import { getAuth } from '@clerk/express'
 import { Router, type NextFunction, type Request, type Response } from 'express'
 import { requireSignedIn, upsertUser } from './auth.js'
 import { pool } from './db.js'
-import { invalidateLeaderboard } from './leaderboard.js'
 
 const KEY_SETS = new Set(['home', 'home-top', 'all'])
 const DIFFICULTIES = new Set(['easy', 'medium', 'hard'])
@@ -85,7 +84,6 @@ resultsRouter.post(
         [user.id, parsed.keySet, parsed.difficulty, parsed.wpm, parsed.accuracy],
       )
       await client.query('COMMIT')
-      await invalidateLeaderboard(parsed.keySet, parsed.difficulty)
       res.status(201).json({ resultId, isPersonalBest: pb.rowCount === 1 })
     } catch (err) {
       await client.query('ROLLBACK')
