@@ -21,3 +21,8 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+# Internal markdown docs — kept out of the published repo. The vendored Clerk
+# skill docs under .agents/ are re-included so they stay in version control.
+*.md
+!.agents/**/*.md
