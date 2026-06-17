@@ -30,6 +30,16 @@ export type FontId =
   | 'ibm-plex-mono'
   | 'source-code-pro'
 
+/** Language used to generate snippets for the Code typing mode. */
+export type CodeLanguage = 'python' | 'javascript' | 'c'
+
+/** Registry for the Settings selector. Python first so it reads as the default. */
+export const CODE_LANGUAGES: Record<CodeLanguage, { label: string }> = {
+  python: { label: 'Python' },
+  javascript: { label: 'JavaScript' },
+  c: { label: 'C' },
+}
+
 /** Rebindable site hotkeys. Combos are normalized strings (see lib/hotkeys.ts):
  *  modifiers lower-cased + `+`-joined, e.g. "alt+t", "Tab", "shift+Enter". The
  *  nav defaults use Alt so they never collide with the typing capture (which
@@ -66,10 +76,12 @@ export interface UserPreferences {
   hotkeys: Record<HotkeyAction, string>
   /** Daily practice goal in minutes (drives the streak ring). 0 = no goal. */
   dailyGoal: number
+  /** Language for the Code typing mode's snippets. */
+  codeLanguage: CodeLanguage
 }
 
 /** Bump when the stored shape changes; `migrate` handles older versions. */
-export const PREFERENCES_VERSION = 3
+export const PREFERENCES_VERSION = 4
 
 /** Selectable daily-goal options, in minutes. */
 export const DAILY_GOALS = [0, 5, 10, 15, 30, 60] as const
@@ -102,11 +114,13 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   keyboardLayout: 'qwerty',
   hotkeys: defaultHotkeys(),
   dailyGoal: 10,
+  codeLanguage: 'python',
 }
 
 const THEME_IDS = Object.keys(THEMES) as Theme[]
 const FONT_IDS = Object.keys(FONTS) as FontId[]
 const LAYOUT_IDS = Object.keys(KEYBOARD_LAYOUTS) as LayoutId[]
+const CODE_LANGUAGE_IDS = Object.keys(CODE_LANGUAGES) as CodeLanguage[]
 
 function normalizeHotkeys(raw: unknown): Record<HotkeyAction, string> {
   const r = (raw ?? {}) as Partial<Record<HotkeyAction, unknown>>
@@ -132,6 +146,9 @@ export function normalizePreferences(raw: unknown): UserPreferences {
     dailyGoal: DAILY_GOALS.includes(p.dailyGoal as (typeof DAILY_GOALS)[number])
       ? (p.dailyGoal as number)
       : DEFAULT_PREFERENCES.dailyGoal,
+    codeLanguage: CODE_LANGUAGE_IDS.includes(p.codeLanguage as CodeLanguage)
+      ? (p.codeLanguage as CodeLanguage)
+      : DEFAULT_PREFERENCES.codeLanguage,
   }
 }
 

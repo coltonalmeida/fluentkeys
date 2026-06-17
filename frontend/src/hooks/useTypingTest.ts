@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { buildCodeTarget } from '../lib/codeSnippets'
+import type { CodeLanguage } from '../lib/preferences'
 import { buildQuoteTarget } from '../lib/quotes'
 import { applyNumbers, applyPunctuation, generateWords } from '../lib/selectWords'
 import { computeStats, type TestStats, type WpmSample } from '../lib/stats'
@@ -6,7 +8,7 @@ import type { Difficulty, KeySetId } from '../lib/words'
 
 export type CharState = 'pending' | 'correct' | 'incorrect'
 export type TestStatus = 'idle' | 'running' | 'finished'
-export type TestMode = 'words' | 'punctuation' | 'numbers' | 'quotes'
+export type TestMode = 'words' | 'punctuation' | 'numbers' | 'quotes' | 'code'
 
 export interface TestSettings {
   keySet: KeySetId
@@ -14,6 +16,8 @@ export interface TestSettings {
   /** seconds */
   duration: number
   mode: TestMode
+  /** Language for code mode (sourced from user preferences). */
+  codeLanguage: CodeLanguage
 }
 
 interface BuiltTarget {
@@ -31,6 +35,10 @@ function buildTarget(settings: TestSettings, weakKeys: Record<string, number>): 
   if (settings.mode === 'quotes') {
     const { text, authors } = buildQuoteTarget(count)
     return { text, attribution: authors.join(', ') }
+  }
+
+  if (settings.mode === 'code') {
+    return { text: buildCodeTarget(count, settings.codeLanguage).text, attribution: null }
   }
 
   // Punctuation/numbers keep the weighted weak-key stream underneath.
@@ -185,21 +193,22 @@ export function useTypingTest(
         return
       }
 
-      // Only printable single characters count
-      if (key.length !== 1) return
+      // Enter types a newline (code mode); otherwise only printable single chars.
+      const ch = key === 'Enter' ? '\n' : key
+      if (ch.length !== 1) return
       if (status === 'idle') setStatus('running')
 
       keystrokesRef.current += 1
       typedRef.current += 1
       const expected = target[index]
-      const correct = key === expected
+      const correct = ch === expected
       if (correct) {
         correctRef.current += 1
         liveCorrectRef.current += 1
         correctTimestampsRef.current.push(performance.now())
       } else {
         errorsThisSecondRef.current += 1
-        if (expected !== undefined && expected !== ' ') {
+        if (expected !== undefined && expected !== ' ' && expected !== '\n') {
           weakKeysRef.current[expected] = (weakKeysRef.current[expected] ?? 0) + 1
         }
       }

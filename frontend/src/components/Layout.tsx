@@ -34,8 +34,8 @@ export function Layout() {
       <SignedIn>
         <UsernameGate />
       </SignedIn>
-      {/* Reserve space for the nav: bottom bar on mobile, right rail on sm+. */}
-      <div className="pb-14 sm:pb-0 sm:pr-16">
+      {/* Reserve bottom space so content clears the floating nav pill. */}
+      <div className="pb-24">
         <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-10">
           <header
             className={`flex items-center justify-between transition-opacity duration-500 ${

@@ -22,6 +22,7 @@
     "keys": "Tasten",
     "difficulty": "Schwierigkeit",
     "time": "Zeit",
+    "mode": "Modus",
     "hintPractice": "Klicke auf den Text und tippe los — die leuchtende Taste zeigt das nächste Zeichen",
     "hintPlain": "Klicke auf den Text und tippe los, um zu beginnen"
   },
@@ -41,6 +42,9 @@
     "layoutHint": "Ändert die Bildschirmtastatur und die Fingerführung.",
     "uiLanguage": "Oberflächensprache",
     "uiLanguageHint": "Tipptests bleiben immer auf Englisch.",
+    "typingTest": "Tipptest",
+    "codeLanguage": "Programmiersprache",
+    "codeLanguageHint": "Wird vom Code-Tippmodus verwendet.",
     "resetSection": "Diesen Bereich zurücksetzen",
     "accountGuest": "Nicht angemeldet. Einstellungen werden auf diesem Gerät gespeichert.",
     "accountSynced": "Angemeldet — Einstellungen werden mit deinem Profil synchronisiert."

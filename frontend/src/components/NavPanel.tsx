@@ -19,9 +19,9 @@ const ITEMS: NavItem[] = [
 ]
 
 /**
- * Keybr-style navigation. A fixed right-hand icon rail on wide viewports;
- * collapses to a bottom bar on narrow ones (icons only — no overlap with the
- * content, which reserves matching padding in Layout).
+ * Keybr-style navigation. A floating, centered pill of icons hovering above the
+ * bottom edge at every viewport size (icons only — no overlap with the content,
+ * which reserves matching bottom padding in Layout).
  */
 export function NavPanel() {
   const { t } = useTranslation()
@@ -29,7 +29,7 @@ export function NavPanel() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 flex h-14 flex-row items-center justify-around border-t border-border bg-bg/90 backdrop-blur sm:inset-y-0 sm:left-auto sm:right-0 sm:h-full sm:w-16 sm:flex-col sm:justify-start sm:gap-2 sm:border-l sm:border-t-0 sm:py-6"
+      className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 flex-row items-center gap-1 rounded-full border border-border bg-bg/90 px-3 py-1.5 shadow-lg backdrop-blur"
     >
       {ITEMS.map(({ to, icon: Icon, labelKey }) => (
         <NavLink

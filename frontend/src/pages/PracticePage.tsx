@@ -20,6 +20,7 @@ const MODES: [TestMode, string][] = [
   ['punctuation', 'Punctuation'],
   ['numbers', 'Numbers'],
   ['quotes', 'Quotes'],
+  ['code', 'Code'],
 ]
 
 // The timed test (/test). The unboxing animation belongs to the home page only,
@@ -34,7 +35,16 @@ export function PracticePage() {
     difficulty: 'medium',
     duration: 30,
     mode: 'words',
+    codeLanguage: prefs.codeLanguage,
   })
+
+  // Code mode's language is owned by Settings, not the toolbar. Fold the current
+  // preference into the settings passed to the test so changing it in Settings
+  // restarts the test with fresh snippets — no effect/state duplication needed.
+  const effectiveSettings = useMemo<TestSettings>(
+    () => ({ ...settings, codeLanguage: prefs.codeLanguage }),
+    [settings, prefs.codeLanguage],
+  )
   const { isSignedIn, getToken } = useAuth()
   const [persistedWeakKeys, setPersistedWeakKeys] = useState<Record<string, number> | undefined>()
   const {
@@ -51,7 +61,7 @@ export function PracticePage() {
     handleKey,
     restart,
     missCounts,
-  } = useTypingTest(settings, persistedWeakKeys)
+  } = useTypingTest(effectiveSettings, persistedWeakKeys)
 
   const [flashKeyId, setFlashKeyId] = useState<string | null>(null)
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -146,7 +156,7 @@ export function PracticePage() {
             onChange={(v) => setSettings((s) => ({ ...s, difficulty: v as Difficulty }))}
           />
           <Selector
-            label="mode"
+            label={t('practice.mode')}
             value={settings.mode}
             options={MODES}
             onChange={(v) => setSettings((s) => ({ ...s, mode: v as TestMode }))}
@@ -218,11 +228,11 @@ export function PracticePage() {
         </section>
       )}
 
-      <p className="text-center text-sm text-muted">
-        {status === 'idle'
-          ? t('practice.hintPractice')
-          : `Press ${formatCombo(prefs.hotkeys.restart)} to restart`}
-      </p>
+      {status !== 'idle' && (
+        <p className="text-center text-sm text-muted">
+          {`Press ${formatCombo(prefs.hotkeys.restart)} to restart`}
+        </p>
+      )}
 
       <AnimatePresence>
         {newAchievements.length > 0 && <AchievementToast keys={newAchievements} />}

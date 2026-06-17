@@ -44,7 +44,7 @@
   --color-error: var(--error); /* wrong keystrokes / destructive */
 }
 
-/* Classic Light — zinc + emerald (default; also covers data-theme='light'). */
+/* Classic Light — zinc (neutral accent; default, also covers data-theme='light'). */
 :root {
   --bg: #f4f4f5;
   --surface: #e4e4e7;
@@ -53,12 +53,12 @@
   --fg: #18181b;
   --muted: #71717a;
   --faint: #a1a1aa;
-  --accent: #059669;
+  --accent: #3f3f46;
   --accent-contrast: #ffffff;
   --error: #ef4444;
 }
 
-/* Classic Dark — zinc + emerald */
+/* Classic Dark — zinc (neutral accent) */
 [data-theme='dark'] {
   --bg: #18181b;
   --surface: #27272a;

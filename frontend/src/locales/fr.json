@@ -22,6 +22,7 @@
     "keys": "Touches",
     "difficulty": "Difficulté",
     "time": "Durée",
+    "mode": "Mode",
     "hintPractice": "Cliquez sur le texte et commencez à taper — la touche allumée indique le caractère suivant",
     "hintPlain": "Cliquez sur le texte et commencez à taper pour démarrer"
   },
@@ -41,6 +42,9 @@
     "layoutHint": "Modifie le clavier à l'écran et les guides de doigts.",
     "uiLanguage": "Langue de l'interface",
     "uiLanguageHint": "Les tests de frappe restent toujours en anglais.",
+    "typingTest": "Test de frappe",
+    "codeLanguage": "Langage de code",
+    "codeLanguageHint": "Utilisé par le mode de frappe Code.",
     "resetSection": "Réinitialiser cette section",
     "accountGuest": "Vous n'êtes pas connecté. Les préférences sont enregistrées sur cet appareil.",
     "accountSynced": "Connecté — les préférences sont synchronisées avec votre profil."

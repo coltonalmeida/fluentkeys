@@ -52,7 +52,7 @@ export function TypingArea({ target, charStates, index, onKey }: TypingAreaProps
       if (e.ctrlKey || e.metaKey || e.altKey) return
       const t = e.target as HTMLElement | null
       if (t?.closest('input, select, textarea, button, [contenteditable="true"]')) return
-      if (e.key.length !== 1 && e.key !== 'Backspace') return
+      if (e.key.length !== 1 && e.key !== 'Backspace' && e.key !== 'Enter') return
       e.preventDefault()
       onKey(e.key)
     }

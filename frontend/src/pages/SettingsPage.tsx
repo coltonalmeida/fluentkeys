@@ -8,11 +8,13 @@ import { ApiError, getMe, updateUsername } from '../lib/api'
 import { comboFromEvent, formatCombo, isModifierOnly } from '../lib/hotkeys'
 import { getLayout, KEYBOARD_LAYOUTS, type LayoutId } from '../lib/keyboard'
 import {
+  CODE_LANGUAGES,
   DAILY_GOALS,
   FONTS,
   HOTKEYS,
   THEMES,
   defaultHotkeys,
+  type CodeLanguage,
   type FontId,
   type HotkeyAction,
   type Theme,
@@ -99,6 +101,23 @@ export function SettingsPage() {
             {DAILY_GOALS.map((m) => (
               <option key={m} value={m}>
                 {m === 0 ? 'No goal' : `${m} min`}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </Card>
+
+      {/* Typing test: content options for the test modes. */}
+      <Card title={t('settings.typingTest')}>
+        <Field label={t('settings.codeLanguage')} hint={t('settings.codeLanguageHint')}>
+          <select
+            value={prefs.codeLanguage}
+            onChange={(e) => update({ codeLanguage: e.target.value as CodeLanguage })}
+            className={selectClass}
+          >
+            {(Object.keys(CODE_LANGUAGES) as CodeLanguage[]).map((id) => (
+              <option key={id} value={id}>
+                {CODE_LANGUAGES[id].label}
               </option>
             ))}
           </select>

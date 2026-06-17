@@ -22,6 +22,7 @@
     "keys": "Keys",
     "difficulty": "Difficulty",
     "time": "Time",
+    "mode": "Mode",
     "hintPractice": "Click the text and start typing — the lit key shows the next character",
     "hintPlain": "Click the text and start typing to begin"
   },
@@ -41,6 +42,9 @@
     "layoutHint": "Changes the on-screen keyboard and finger guides.",
     "uiLanguage": "Interface language",
     "uiLanguageHint": "Typing tests always stay in English.",
+    "typingTest": "Typing test",
+    "codeLanguage": "Code language",
+    "codeLanguageHint": "Used by the Code typing mode.",
     "resetSection": "Reset this section",
     "accountGuest": "You're not signed in. Preferences are saved on this device.",
     "accountSynced": "Signed in — preferences sync to your profile.",

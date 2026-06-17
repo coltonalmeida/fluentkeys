@@ -22,6 +22,7 @@
     "keys": "Teclas",
     "difficulty": "Dificultad",
     "time": "Tiempo",
+    "mode": "Modo",
     "hintPractice": "Haz clic en el texto y empieza a escribir: la tecla iluminada muestra el siguiente carácter",
     "hintPlain": "Haz clic en el texto y empieza a escribir para comenzar"
   },
@@ -41,6 +42,9 @@
     "layoutHint": "Cambia el teclado en pantalla y las guías de dedos.",
     "uiLanguage": "Idioma de la interfaz",
     "uiLanguageHint": "Las pruebas de escritura siempre están en inglés.",
+    "typingTest": "Prueba de escritura",
+    "codeLanguage": "Lenguaje de código",
+    "codeLanguageHint": "Usado por el modo de escritura Código.",
     "resetSection": "Restablecer esta sección",
     "accountGuest": "No has iniciado sesión. Las preferencias se guardan en este dispositivo.",
     "accountSynced": "Sesión iniciada: las preferencias se sincronizan con tu perfil."

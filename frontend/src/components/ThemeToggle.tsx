@@ -18,7 +18,7 @@ export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
         aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         onClick={onToggle}
         whileTap={{ scale: 0.92 }}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-fg transition-colors duration-150 hover:bg-fg hover:text-bg"
+        className="relative z-0 flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-surface text-fg transition-colors duration-300 before:absolute before:inset-0 before:-z-10 before:translate-x-[150%] before:translate-y-[150%] before:scale-[2.5] before:rounded-[100%] before:bg-fg before:transition-transform before:duration-500 before:content-[''] hover:text-bg hover:before:translate-x-[0%] hover:before:translate-y-[0%]"
         style={{
           boxShadow:
             'inset 0 1px 1px rgba(255,255,255,0.25), inset 0 -2px 3px rgba(0,0,0,0.25)',
