@@ -1,5 +1,6 @@
 import { getAuth } from '@clerk/express'
 import { Router, type NextFunction, type Request, type Response } from 'express'
+import rateLimit from 'express-rate-limit'
 import { evaluateAchievements } from './achievements.js'
 import { requireSignedIn, upsertUser } from './auth.js'
 import { pool } from './db.js'
@@ -33,15 +34,32 @@ function validate(body: unknown): ResultBody | string {
   if (typeof b.rawWpm !== 'number' || b.rawWpm < 0 || b.rawWpm > 500) return 'Invalid rawWpm'
   if (b.wpm > b.rawWpm + 0.01) return 'wpm cannot exceed rawWpm'
   if (typeof b.accuracy !== 'number' || b.accuracy < 0 || b.accuracy > 100) return 'Invalid accuracy'
-  if (typeof b.charCounts !== 'object' || b.charCounts === null) return 'Invalid charCounts'
+  // charCounts is stored as JSONB; bound it so a client can't bloat the column.
+  if (typeof b.charCounts !== 'object' || b.charCounts === null || Array.isArray(b.charCounts))
+    return 'Invalid charCounts'
+  const entries = Object.entries(b.charCounts)
+  if (entries.length > 200) return 'charCounts too large'
+  for (const [, v] of entries) {
+    if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) return 'Invalid charCounts value'
+  }
   return b as ResultBody
 }
 
 export const resultsRouter = Router()
 resultsRouter.use(requireSignedIn)
 
+// A real player finishes one test every several seconds at most; this only
+// stops scripted flooding of results/PB/leaderboard rows.
+const writeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
 resultsRouter.post(
   '/results',
+  writeLimiter,
   wrap(async (req, res) => {
     const parsed = validate(req.body)
     if (typeof parsed === 'string') {

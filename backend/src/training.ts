@@ -1,5 +1,6 @@
 import { getAuth } from '@clerk/express'
 import { Router, type NextFunction, type Request, type Response } from 'express'
+import rateLimit from 'express-rate-limit'
 import { evaluateAchievements } from './achievements.js'
 import { requireSignedIn, upsertUser } from './auth.js'
 import { pool } from './db.js'
@@ -53,8 +54,11 @@ function sanitizeSamples(input: unknown): Sample[] {
     if (typeof s.key !== 'string' || s.key.length !== 1) continue
     if (typeof s.correct !== 'boolean') continue
     if (typeof s.reactionMs !== 'number' || !Number.isFinite(s.reactionMs)) continue
-    if (typeof s.timestamp !== 'number' || !Number.isFinite(s.timestamp)) continue
-    clean.push({ key: s.key, correct: s.correct, reactionMs: s.reactionMs, timestamp: s.timestamp })
+    if (typeof s.timestamp !== 'number' || !Number.isFinite(s.timestamp) || s.timestamp < 0) continue
+    // Clamp reaction to a sane range so a bad client can't store wild values
+    // (matches the client's MAX_REACTION_MS ceiling, with headroom).
+    const reactionMs = Math.min(60_000, Math.max(0, s.reactionMs))
+    clean.push({ key: s.key, correct: s.correct, reactionMs, timestamp: s.timestamp })
   }
   return clean.slice(-ROLLING_WINDOW) // never trust more than the window size
 }
@@ -97,6 +101,14 @@ function validateSession(body: unknown): SessionBody | string {
 export const trainingRouter = Router()
 trainingRouter.use(requireSignedIn)
 
+// Throttle session writes (per IP) — far above any human practice cadence.
+const sessionLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
 // Load the user's persisted trainer state (cross-device continuity).
 // NOTE: strength decay (spec §2.3) is implemented client-side as DISPLAY-ONLY
 // (see lib/letterStrength.ts `applyDecay`/`displayStrengthMap`). Idle letters fade
@@ -132,6 +144,7 @@ trainingRouter.get(
 // and store a session summary row.
 trainingRouter.post(
   '/training/session',
+  sessionLimiter,
   wrap(async (req, res) => {
     const parsed = validateSession(req.body)
     if (typeof parsed === 'string') {

@@ -1,5 +1,6 @@
 import { clerkClient, getAuth } from '@clerk/express'
 import { Router, type NextFunction, type Request, type Response } from 'express'
+import rateLimit from 'express-rate-limit'
 import { pool } from './db.js'
 
 export interface AppUser {
@@ -82,6 +83,15 @@ export function requireSignedIn(req: Request, res: Response, next: NextFunction)
 
 export const authRouter = Router()
 
+// Renames are already capped to once/week in the handler; this throttles abuse
+// of the endpoint itself (e.g. brute-forcing availability of taken names).
+const usernameLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
 // Protected route confirming the Clerk token flow end to end.
 authRouter.get(
   '/me',
@@ -103,6 +113,7 @@ authRouter.get(
 // exempt and does not start the weekly clock.
 authRouter.put(
   '/username',
+  usernameLimiter,
   requireSignedIn,
   wrap(async (req, res) => {
     const raw = (req.body as { username?: unknown })?.username
