@@ -26,27 +26,7 @@ export function HelpPage() {
         <h1 className="text-3xl font-bold text-fg">
           How FluentKeys works
         </h1>
-        <p className="text-lg leading-relaxed">
-          FluentKeys helps you learn <strong>touch typing</strong> — typing without looking
-          at your hands. You don&rsquo;t need any experience. Just type the words you see,
-          and the app guides your fingers and adapts to you. Here&rsquo;s everything, step
-          by step.
-        </p>
       </header>
-
-      <Section emoji="🚀" title="Getting started">
-        <p>
-          On the home page, simply start typing the words on screen — you don&rsquo;t even
-          need to click first. The <strong>brightly lit key</strong> always shows the next
-          letter to press. There&rsquo;s no timer and no pressure: go at a comfortable pace
-          for as long as you like, and press <strong>Stop</strong> whenever you want to see
-          a summary.
-        </p>
-        <p>
-          You can practice without an account. If you <strong>sign in</strong>, your
-          progress is saved and follows you to any device.
-        </p>
-      </Section>
 
       <Section emoji="⌨️" title="Reading the keyboard">
         <p>
@@ -91,45 +71,6 @@ export function HelpPage() {
         </p>
       </Section>
 
-      <Section emoji="✨" title="Why some words look made-up">
-        <p>
-          Sometimes you&rsquo;ll see &ldquo;words&rdquo; like <em>jaff</em> or{' '}
-          <em>dalk</em>. Early on — or for rare letters like <strong>J</strong> — there
-          aren&rsquo;t enough real English words made only from the letters you&rsquo;ve
-          unlocked. So the app invents <strong>pronounceable practice words</strong> to
-          fill the gap. As you unlock more letters, real words take over.
-        </p>
-      </Section>
-
-      <Section emoji="🎯" title="Two ways to use it">
-        <p>
-          <strong>Practice</strong> (the home page) is the adaptive trainer above — no
-          timer, it grows with you. <strong>Timed test</strong> (the clock icon in the
-          menu) is a classic sprint: type for a set number of seconds, then see your
-          words-per-minute and accuracy. Use Practice to <em>build</em> skill, the Timed
-          test to <em>measure</em> it.
-        </p>
-      </Section>
-
-      <Section emoji="💡" title="Tips for everyone">
-        <ul className="flex list-disc flex-col gap-2 pl-5">
-          <li>Sit comfortably, feet flat on the floor, wrists relaxed.</li>
-          <li>
-            Look at the <strong>screen</strong>, not your hands — that&rsquo;s the whole
-            skill, and it feels strange at first for everyone.
-          </li>
-          <li>
-            <strong>Slow and accurate</strong> beats fast and sloppy. Speed arrives on its
-            own.
-          </li>
-          <li>A few minutes a day works far better than one long session.</li>
-          <li>
-            In <strong>Settings</strong> you can change the color theme and keyboard
-            layout. To make everything bigger, zoom your browser (hold <kbd>Ctrl</kbd> and
-            press <kbd>+</kbd>).
-          </li>
-        </ul>
-      </Section>
     </div>
   )
 }
