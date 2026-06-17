@@ -43,7 +43,22 @@
     "uiLanguageHint": "Typing tests always stay in English.",
     "resetSection": "Reset this section",
     "accountGuest": "You're not signed in. Preferences are saved on this device.",
-    "accountSynced": "Signed in — preferences sync to your profile."
+    "accountSynced": "Signed in — preferences sync to your profile.",
+    "username": "Username",
+    "usernameHint": "Shown on the leaderboard and to rivals.",
+    "usernamePlaceholder": "your_username",
+    "usernameSave": "Save",
+    "usernameSaving": "Saving…",
+    "usernameSaved": "Saved",
+    "usernameTaken": "That username is taken",
+    "usernameInvalid": "That username isn't allowed — try another.",
+    "usernameLocked": "You can change your username again on {{date}}."
+  },
+  "usernameGate": {
+    "title": "Choose a username",
+    "body": "Pick a username to continue — it's shown on the leaderboard and to rivals. You can change it later (once a week).",
+    "cta": "Set username",
+    "saving": "Saving…"
   },
   "profile": {
     "title": "Profile",

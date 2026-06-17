@@ -73,7 +73,7 @@ export function CursorHoverCard({ open, children }: CursorHoverCardProps) {
             zIndex: 60,
             pointerEvents: 'none',
           }}
-          className="w-56 rounded-xl border border-zinc-200 bg-white/95 p-3 text-left shadow-xl backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/95"
+          className="w-56 rounded-xl border border-border bg-surface/95 p-3 text-left shadow-xl backdrop-blur"
         >
           {children}
         </motion.div>

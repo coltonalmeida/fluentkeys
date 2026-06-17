@@ -35,6 +35,12 @@ export function useTrainer() {
   const letter = useLetterStrength(initial)
   const { recordKeystroke, recompute, getSnapshot, hydrate, clearJustUnlocked } = letter
   const hydratedRemote = useRef(false)
+  // Tracks sign-in for the persistence target without re-subscribing callbacks:
+  // signed-in → localStorage (cloud-synced), anonymous → sessionStorage (per-session).
+  const signedInRef = useRef(false)
+  useEffect(() => {
+    signedInRef.current = isSignedIn === true
+  }, [isSignedIn])
 
   const newest = newestLetter(letter.unlockedCount)
   const content = useContentGenerator({
@@ -56,6 +62,7 @@ export function useTrainer() {
   const [liveWpm, setLiveWpm] = useState(0)
   const [accuracy, setAccuracy] = useState(100)
   const [wordsTyped, setWordsTyped] = useState(0)
+  const [newAchievements, setNewAchievements] = useState<string[]>([])
 
   const currentLineRef = useRef(content.currentLine)
   const indexRef = useRef(0)
@@ -146,7 +153,7 @@ export function useTrainer() {
             sessionUnlocksRef.current.push(newly)
             refreshNext()
           }
-          saveLocalTraining(getSnapshot())
+          saveLocalTraining(getSnapshot(), signedInRef.current)
         }
       }
 
@@ -187,7 +194,7 @@ export function useTrainer() {
     if (newly) sessionUnlocksRef.current.push(newly)
 
     const snap = getSnapshot()
-    saveLocalTraining(snap)
+    saveLocalTraining(snap, signedInRef.current)
 
     const endStrength = strengthMapFrom(snap.windows)
     const unlocked = unlockedLetters(snap.unlockedCount)
@@ -252,7 +259,7 @@ export function useTrainer() {
       .then((state) => {
         if (statusRef.current !== 'idle') return
         hydrate({ unlockedCount: state.unlockedCount, windows: state.windows })
-        saveLocalTraining({ unlockedCount: state.unlockedCount, windows: state.windows })
+        saveLocalTraining({ unlockedCount: state.unlockedCount, windows: state.windows }, true)
       })
       .catch((err) => console.error('training state load failed:', err))
   }, [isSignedIn, getToken, hydrate])
@@ -281,12 +288,13 @@ export function useTrainer() {
           },
         }),
       )
+      .then((r) => r.newlyEarned.length > 0 && setNewAchievements(r.newlyEarned))
       .catch((err) => console.error('training session save failed:', err))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per finish
   }, [status])
 
   // Best-effort save if the tab is left mid-session.
-  useEffect(() => () => saveLocalTraining(getSnapshot()), [getSnapshot])
+  useEffect(() => () => saveLocalTraining(getSnapshot(), signedInRef.current), [getSnapshot])
 
   const nextChar = status === 'finished' ? null : (content.currentLine[index] ?? null)
 
@@ -301,6 +309,9 @@ export function useTrainer() {
     liveWpm,
     accuracy,
     wordsTyped,
+    // achievements earned when the finished session synced
+    newAchievements,
+    clearNewAchievements: () => setNewAchievements([]),
     // strength / keyboard
     strengthMap: letter.strengthMap,
     sampleCounts: letter.sampleCounts,

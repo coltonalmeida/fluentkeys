@@ -21,9 +21,9 @@ const LEGEND_FINGERS: Finger[] = [
 
 export function HelpPage() {
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8 text-zinc-700 dark:text-zinc-200">
+    <div className="mx-auto flex max-w-2xl flex-col gap-8 text-fg">
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
+        <h1 className="text-3xl font-bold text-fg">
           How FluentKeys works
         </h1>
         <p className="text-lg leading-relaxed">
@@ -136,8 +136,8 @@ export function HelpPage() {
 
 function Section({ emoji, title, children }: { emoji: string; title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-3 rounded-2xl bg-zinc-100 p-6 dark:bg-zinc-800/50">
-      <h2 className="flex items-center gap-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+    <section className="flex flex-col gap-3 rounded-2xl bg-surface p-6">
+      <h2 className="flex items-center gap-2 text-xl font-semibold text-fg">
         <span aria-hidden className="text-2xl leading-none">
           {emoji}
         </span>
@@ -150,7 +150,7 @@ function Section({ emoji, title, children }: { emoji: string; title: string; chi
 
 function FingerLegend() {
   return (
-    <div className="flex flex-wrap gap-x-5 gap-y-2 rounded-lg bg-zinc-200/60 p-4 dark:bg-zinc-900/40">
+    <div className="flex flex-wrap gap-x-5 gap-y-2 rounded-lg bg-surface-2 p-4">
       {LEGEND_FINGERS.map((finger) => (
         <span key={finger} className="flex items-center gap-2 text-sm">
           <span
@@ -200,7 +200,7 @@ function ExampleKey({
   locked?: boolean
 }) {
   return (
-    <span className="flex flex-col items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+    <span className="flex flex-col items-center gap-1.5 text-xs text-muted">
       <span
         className="relative flex h-12 w-12 items-end justify-start rounded-md px-2 pb-1 text-base font-medium"
         style={style}
@@ -225,21 +225,21 @@ function StrengthExamples() {
       {examples.map(({ letter, score, note }) => (
         <div
           key={letter}
-          className="flex w-28 flex-col gap-1.5 rounded-lg bg-zinc-200/60 p-3 dark:bg-zinc-900/40"
+          className="flex w-28 flex-col gap-1.5 rounded-lg bg-surface-2 p-3"
         >
           <div className="flex items-baseline justify-between">
-            <span className="text-lg font-semibold uppercase text-zinc-900 dark:text-zinc-100">
+            <span className="text-lg font-semibold uppercase text-fg">
               {letter}
             </span>
-            <span className="text-sm tabular-nums text-zinc-500 dark:text-zinc-400">{score}</span>
+            <span className="text-sm tabular-nums text-muted">{score}</span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-300 dark:bg-zinc-700">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
             <div
               className="h-full rounded-full"
               style={{ width: `${score}%`, background: strengthColor(score) }}
             />
           </div>
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">{note}</span>
+          <span className="text-xs text-muted">{note}</span>
         </div>
       ))}
     </div>

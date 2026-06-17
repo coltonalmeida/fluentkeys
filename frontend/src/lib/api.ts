@@ -4,6 +4,8 @@ export interface User {
   clerk_id: string
   email: string | null
   username: string | null
+  /** ISO timestamp of the last rename; null if never renamed (or only set once). */
+  username_changed_at: string | null
 }
 
 export class ApiError extends Error {
@@ -67,10 +69,14 @@ export interface PersonalBest {
 }
 
 export const postResult = (token: string | null, payload: ResultPayload) =>
-  apiRequest<{ resultId: string; isPersonalBest: boolean }>('/results', token, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
+  apiRequest<{ resultId: string; isPersonalBest: boolean; newlyEarned: string[] }>(
+    '/results',
+    token,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  )
 
 export const getHistory = (token: string | null) =>
   apiRequest<{ results: HistoryEntry[] }>('/results', token)
@@ -90,6 +96,17 @@ export const putPreferences = (token: string | null, preferences: unknown) =>
   apiRequest<{ preferences: unknown }>('/auth/preferences', token, {
     method: 'PUT',
     body: JSON.stringify({ preferences }),
+  })
+
+export const getMe = (token: string | null) => apiRequest<{ user: User }>('/auth/me', token)
+
+// Change/set the username through the backend (gated to once per week; Clerk
+// stays the format + uniqueness authority). Distinguish failures by
+// ApiError.status: 409 taken, 429 rate-limited, 400 invalid.
+export const updateUsername = (token: string | null, username: string) =>
+  apiRequest<{ username: string; nextChangeAllowedAt: string | null }>('/auth/username', token, {
+    method: 'PUT',
+    body: JSON.stringify({ username }),
   })
 
 // Letter-strength trainer sync. localStorage is the always-available store;
@@ -122,10 +139,77 @@ export const getTrainingState = (token: string | null) =>
   apiRequest<TrainingStateResponse>('/training/state', token)
 
 export const postTrainingSession = (token: string | null, payload: TrainingSessionPayload) =>
-  apiRequest<{ ok: boolean }>('/training/session', token, {
+  apiRequest<{ ok: boolean; newlyEarned: string[] }>('/training/session', token, {
     method: 'POST',
     body: JSON.stringify(payload),
   })
+
+export interface EarnedAchievement {
+  key: string
+  earnedAt: string
+}
+
+export const getAchievements = (token: string | null) =>
+  apiRequest<{ earned: EarnedAchievement[] }>('/achievements', token)
+
+// Profile statistics + activity heatmap. Aggregated server-side over both
+// activity streams (timed practice tests + trainer lessons). Speed/accuracy are
+// null when there's no activity in the bucket.
+export interface StatBucket {
+  timeSeconds: number
+  lessons: number
+  topWpm: number | null
+  avgWpm: number | null
+  topAccuracy: number | null
+  avgAccuracy: number | null
+}
+
+export interface StatsOverview {
+  allTime: StatBucket
+  today: StatBucket
+  /** Calendar years with activity (plus the current year), newest first. */
+  years: number[]
+}
+
+export interface DayActivity {
+  /** 'YYYY-MM-DD' in the requested time zone. */
+  date: string
+  tests: number
+  lessons: number
+  count: number
+}
+
+/** Pass the browser's IANA zone: Intl.DateTimeFormat().resolvedOptions().timeZone. */
+export const getStatsOverview = (token: string | null, tz: string) =>
+  apiRequest<StatsOverview>(`/stats/overview?tz=${encodeURIComponent(tz)}`, token)
+
+export interface StreakResponse {
+  current: number
+  longest: number
+  /** Seconds practiced today (tz-local), compared against the client daily goal. */
+  todaySeconds: number
+}
+
+export const getStreak = (token: string | null, tz: string) =>
+  apiRequest<StreakResponse>(`/stats/streak?tz=${encodeURIComponent(tz)}`, token)
+
+export interface WpmDayPoint {
+  day: string
+  avgWpm: number
+  bestWpm: number
+}
+
+export const getWpmSeries = (token: string | null, days: number, tz: string) =>
+  apiRequest<{ series: WpmDayPoint[] }>(
+    `/stats/wpm-series?days=${days}&tz=${encodeURIComponent(tz)}`,
+    token,
+  )
+
+export const getActivity = (token: string | null, tz: string, year?: number) =>
+  apiRequest<{ days: DayActivity[] }>(
+    `/stats/activity?tz=${encodeURIComponent(tz)}${year ? `&year=${year}` : ''}`,
+    token,
+  )
 
 export interface LeaderboardEntry {
   username: string | null
@@ -135,9 +219,39 @@ export interface LeaderboardEntry {
 }
 
 export type LeaderboardWindow = 'all' | 'day' | 'week'
+export type LeaderboardScope = 'global' | 'friends'
 
-export const getLeaderboard = (keySet: string, difficulty: string, window: LeaderboardWindow) =>
+export const getLeaderboard = (
+  token: string | null,
+  keySet: string,
+  difficulty: string,
+  window: LeaderboardWindow,
+  scope: LeaderboardScope = 'global',
+) =>
   apiRequest<{ entries: LeaderboardEntry[] }>(
-    `/leaderboard?keySet=${keySet}&difficulty=${difficulty}&window=${window}`,
-    null,
+    `/leaderboard?keySet=${keySet}&difficulty=${difficulty}&window=${window}&scope=${scope}`,
+    token,
   )
+
+export interface UserSummary {
+  id: string
+  username: string | null
+}
+
+export const searchUsers = (token: string | null, q: string) =>
+  apiRequest<{ users: UserSummary[] }>(`/users/search?q=${encodeURIComponent(q)}`, token)
+
+export const getFollows = (token: string | null) =>
+  apiRequest<{ follows: UserSummary[] }>('/follows', token)
+
+export const follow = (token: string | null, followeeId: string) =>
+  apiRequest<{ ok: boolean }>('/follows', token, {
+    method: 'POST',
+    body: JSON.stringify({ followeeId }),
+  })
+
+export const unfollow = (token: string | null, followeeId: string) =>
+  apiRequest<{ ok: boolean }>('/follows', token, {
+    method: 'DELETE',
+    body: JSON.stringify({ followeeId }),
+  })

@@ -126,23 +126,23 @@ function HintBody({ info }: { info: LetterInfo }) {
   if (info.kind === 'next') {
     return (
       <div className="flex flex-col gap-1.5">
-        <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        <div className="text-sm font-semibold text-fg">
           Next to unlock: {info.letter.toUpperCase()}
         </div>
-        <div className="text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="text-xs text-muted">
           Bring your weakest key{' '}
-          <span className="font-semibold uppercase text-zinc-700 dark:text-zinc-200">
+          <span className="font-semibold uppercase text-fg">
             {info.weakest}
           </span>{' '}
           to {UNLOCK_THRESHOLD} strength &amp; {MIN_SAMPLES_TO_UNLOCK} reps.
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
           <div
-            className="h-full rounded-full bg-emerald-500 transition-[width] duration-300"
+            className="h-full rounded-full bg-accent transition-[width] duration-300"
             style={{ width: `${info.progressPct}%` }}
           />
         </div>
-        <div className="flex justify-between text-[0.7rem] tabular-nums text-zinc-400 dark:text-zinc-500">
+        <div className="flex justify-between text-[0.7rem] tabular-nums text-faint">
           <span>
             {info.ws}/{UNLOCK_THRESHOLD} strength
           </span>
@@ -157,8 +157,8 @@ function HintBody({ info }: { info: LetterInfo }) {
   if (info.kind === 'locked') {
     return (
       <div className="flex items-center gap-2">
-        <Lock size={14} className="shrink-0 text-zinc-400" aria-hidden />
-        <span className="text-sm text-zinc-600 dark:text-zinc-300">
+        <Lock size={14} className="shrink-0 text-faint" aria-hidden />
+        <span className="text-sm text-muted">
           Unlock <span className="font-semibold uppercase">{info.nextLetter}</span> first
         </span>
       </div>
@@ -168,20 +168,20 @@ function HintBody({ info }: { info: LetterInfo }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between">
-        <span className="text-sm font-semibold uppercase text-zinc-900 dark:text-zinc-100">
+        <span className="text-sm font-semibold uppercase text-fg">
           {info.letter}
         </span>
-        <span className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+        <span className="text-xs tabular-nums text-muted">
           {info.strength}/100 · {info.reps} reps
         </span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
         <div
           className="h-full rounded-full"
           style={{ width: `${info.strength}%`, background: strengthColor(info.strength) }}
         />
       </div>
-      <div className="text-xs text-zinc-500 dark:text-zinc-400">
+      <div className="text-xs text-muted">
         {info.mastered
           ? 'Solid — keep it up.'
           : `Reach ${UNLOCK_THRESHOLD} strength & ${MIN_SAMPLES_TO_UNLOCK} reps to help unlock the next key.`}
@@ -209,13 +209,13 @@ function Card({
       title={title}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
-      className="flex w-11 flex-col items-center gap-1 rounded-md bg-zinc-200 px-1.5 py-1.5 dark:bg-zinc-800"
+      className="flex w-11 flex-col items-center gap-1 rounded-md bg-surface px-1.5 py-1.5"
     >
-      <span className="text-sm font-semibold uppercase text-zinc-700 dark:text-zinc-200">
+      <span className="text-sm font-semibold uppercase text-fg">
         {letter}
       </span>
-      <span className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">{pct}</span>
-      <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-300 dark:bg-zinc-700">
+      <span className="text-xs tabular-nums text-muted">{pct}</span>
+      <div className="h-1 w-full overflow-hidden rounded-full bg-surface-2">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, background: strengthColor(score) }} />
       </div>
     </div>
@@ -238,13 +238,13 @@ function LockedCard({
       title={title}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
-      className="flex w-11 flex-col items-center gap-1 rounded-md bg-zinc-200/50 px-1.5 py-1.5 opacity-50 dark:bg-zinc-800/50"
+      className="flex w-11 flex-col items-center gap-1 rounded-md bg-surface px-1.5 py-1.5 opacity-50"
     >
-      <span className="text-sm font-semibold uppercase text-zinc-400 dark:text-zinc-500">
+      <span className="text-sm font-semibold uppercase text-faint">
         {letter}
       </span>
-      <Lock size={11} className="text-zinc-400 dark:text-zinc-500" aria-hidden />
-      <div className="h-1 w-full rounded-full bg-zinc-300 dark:bg-zinc-700" />
+      <Lock size={11} className="text-faint" aria-hidden />
+      <div className="h-1 w-full rounded-full bg-surface-2" />
     </div>
   )
 }

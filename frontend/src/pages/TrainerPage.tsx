@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { AchievementToast } from '../components/AchievementToast'
 import { KeyboardVisual } from '../components/KeyboardVisual'
 import { LetterStrengthPanel } from '../components/LetterStrengthPanel'
 import { SessionSummary } from '../components/SessionSummary'
@@ -41,6 +42,14 @@ export function TrainerPage() {
     return () => clearTimeout(id)
   }, [justUnlocked, clearJustUnlocked])
 
+  // Auto-dismiss the achievement toast after the session syncs.
+  const { newAchievements, clearNewAchievements } = trainer
+  useEffect(() => {
+    if (newAchievements.length === 0) return
+    const id = setTimeout(() => clearNewAchievements(), 3500)
+    return () => clearTimeout(id)
+  }, [newAchievements, clearNewAchievements])
+
   const handleKey = (key: string) => {
     if (!introDone) return // no typing while the box is still on
     // Flash the wrongly-pressed key on the visual keyboard.
@@ -76,7 +85,7 @@ export function TrainerPage() {
           <button
             type="button"
             onClick={trainer.stop}
-            className="rounded-md border border-zinc-300 px-3 py-1 text-zinc-600 transition-colors hover:bg-zinc-200 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-md border border-border px-3 py-1 text-muted transition-colors hover:bg-surface"
           >
             Stop
           </button>
@@ -95,7 +104,7 @@ export function TrainerPage() {
         )}
       </motion.section>
 
-      <hr className="border-zinc-200 dark:border-zinc-800" />
+      <hr className="border-border" />
 
       {/* Keyboard — strength colors revealed under the lifting lid. */}
       <section className="flex min-h-[18rem] items-start justify-center overflow-visible">
@@ -142,6 +151,10 @@ export function TrainerPage() {
       </AnimatePresence>
 
       <AnimatePresence>
+        {newAchievements.length > 0 && <AchievementToast keys={newAchievements} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {finished && trainer.summary && (
           <SessionSummary summary={trainer.summary} onPracticeAgain={trainer.practiceAgain} />
         )}
@@ -153,10 +166,10 @@ export function TrainerPage() {
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex items-baseline gap-1.5">
-      <span className="font-mono text-2xl tabular-nums text-zinc-700 dark:text-zinc-200">
+      <span className="font-mono text-2xl tabular-nums text-fg">
         {value}
       </span>
-      <span className="text-xs uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+      <span className="text-xs uppercase tracking-wide text-faint">
         {label}
       </span>
     </div>

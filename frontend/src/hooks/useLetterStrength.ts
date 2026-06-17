@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import {
+  displayStrengthMap,
   pushSample,
   sampleCountsFrom,
   strengthMapFrom,
@@ -41,8 +42,10 @@ export function useLetterStrength(initial: TrainingState): UseLetterStrength {
   const unlockedCountRef = useRef(initial.unlockedCount)
 
   const [unlockedCount, setUnlockedCount] = useState(initial.unlockedCount)
+  // Displayed strength includes idle decay; the unlock gate below uses the raw
+  // (undecayed) map so decay can never re-lock a letter.
   const [strengthMap, setStrengthMap] = useState<Record<string, number>>(() =>
-    strengthMapFrom(initial.windows),
+    displayStrengthMap(initial.windows, Date.now()),
   )
   const [sampleCounts, setSampleCounts] = useState<Record<string, number>>(() =>
     sampleCountsFrom(initial.windows),
@@ -64,9 +67,9 @@ export function useLetterStrength(initial: TrainingState): UseLetterStrength {
   )
 
   const recompute = useCallback((): string | null => {
-    const sm = strengthMapFrom(windowsRef.current)
+    const sm = strengthMapFrom(windowsRef.current) // raw — drives the unlock gate
     const sc = sampleCountsFrom(windowsRef.current)
-    setStrengthMap(sm)
+    setStrengthMap(displayStrengthMap(windowsRef.current, Date.now()))
     setSampleCounts(sc)
 
     const prev = unlockedCountRef.current
@@ -87,7 +90,7 @@ export function useLetterStrength(initial: TrainingState): UseLetterStrength {
     windowsRef.current = state.windows
     unlockedCountRef.current = state.unlockedCount
     setUnlockedCount(state.unlockedCount)
-    setStrengthMap(strengthMapFrom(state.windows))
+    setStrengthMap(displayStrengthMap(state.windows, Date.now()))
     setSampleCounts(sampleCountsFrom(state.windows))
   }, [])
 

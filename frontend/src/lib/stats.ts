@@ -7,6 +7,18 @@ export interface TestStats {
   totalKeystrokes: number
 }
 
+/** One per-second snapshot of the test, used to draw the WPM-over-time graph. */
+export interface WpmSample {
+  /** elapsed seconds since the test started (1, 2, 3, …) */
+  t: number
+  /** net WPM from cumulative correct chars at this second */
+  wpm: number
+  /** raw WPM from all typed chars at this second */
+  raw: number
+  /** mistakes made during this one-second window */
+  errors: number
+}
+
 /** Standard WPM: (correct chars / 5) per minute. Raw WPM counts all typed chars. */
 export function computeStats(
   correctChars: number,

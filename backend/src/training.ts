@@ -1,5 +1,6 @@
 import { getAuth } from '@clerk/express'
 import { Router, type NextFunction, type Request, type Response } from 'express'
+import { evaluateAchievements } from './achievements.js'
 import { requireSignedIn, upsertUser } from './auth.js'
 import { pool } from './db.js'
 
@@ -97,9 +98,11 @@ export const trainingRouter = Router()
 trainingRouter.use(requireSignedIn)
 
 // Load the user's persisted trainer state (cross-device continuity).
-// NOTE: the 7-day score decay from spec §2.3 is intentionally deferred — the
-// live strength is derived from the rolling window, which the decay-on-score
-// model doesn't compose with cleanly. Tracked as a follow-up.
+// NOTE: strength decay (spec §2.3) is implemented client-side as DISPLAY-ONLY
+// (see lib/letterStrength.ts `applyDecay`/`displayStrengthMap`). Idle letters fade
+// in the shown score but never re-lock — the unlock gate keeps using the raw
+// rolling-window strength. The server stores raw samples + last_practiced_at; the
+// client derives decay from per-sample timestamps, so no server-side decay runs.
 trainingRouter.get(
   '/training/state',
   wrap(async (req, res) => {
@@ -182,8 +185,9 @@ trainingRouter.post(
         ],
       )
 
+      const newlyEarned = await evaluateAchievements(client, user.id)
       await client.query('COMMIT')
-      res.status(201).json({ ok: true })
+      res.status(201).json({ ok: true, newlyEarned })
     } catch (err) {
       await client.query('ROLLBACK')
       throw err

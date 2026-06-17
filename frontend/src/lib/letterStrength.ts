@@ -86,3 +86,47 @@ export function sampleCountsFrom(windows: SampleWindows): Record<string, number>
   }
   return counts
 }
+
+// --- Strength decay (FEATURE-ROADMAP #9) -----------------------------------
+// Idle letters slowly fade so mastery reflects *current* skill. This is
+// DISPLAY-ONLY: the decayed value never feeds the unlock gate (which keeps using
+// the raw rolling-window strength), so a letter can never be re-locked by decay.
+
+const DAY_MS = 86_400_000
+/** No decay for the first day, then this many strength points lost per idle day. */
+const DECAY_GRACE_DAYS = 1
+const DECAY_PER_DAY = 3
+
+/** Reduce a strength score by idle time since it was last practiced (floored at 0). */
+export function applyDecay(strength: number, lastPracticedAt: number | null, now: number): number {
+  if (lastPracticedAt == null) return strength
+  const idleDays = (now - lastPracticedAt) / DAY_MS
+  const effective = Math.max(0, idleDays - DECAY_GRACE_DAYS)
+  return Math.max(0, strength - effective * DECAY_PER_DAY)
+}
+
+/** Most-recent sample timestamp per letter — when each was last practiced. */
+export function lastPracticedFrom(windows: SampleWindows): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const [letter, window] of Object.entries(windows)) {
+    let max = 0
+    for (const s of window) if (s.timestamp > max) max = s.timestamp
+    if (max > 0) out[letter] = max
+  }
+  return out
+}
+
+/**
+ * Strength map for *display*, with idle decay applied. Works for both signed-in
+ * (cloud `recent_samples`) and anonymous (local snapshot) since both windows
+ * carry per-sample timestamps. Keep gating on `strengthMapFrom` (undecayed).
+ */
+export function displayStrengthMap(windows: SampleWindows, now: number): Record<string, number> {
+  const raw = strengthMapFrom(windows)
+  const last = lastPracticedFrom(windows)
+  const out: Record<string, number> = {}
+  for (const [letter, score] of Object.entries(raw)) {
+    out[letter] = applyDecay(score, last[letter] ?? null, now)
+  }
+  return out
+}

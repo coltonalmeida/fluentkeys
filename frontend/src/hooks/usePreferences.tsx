@@ -8,7 +8,6 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import i18n from '../i18n'
 import { getPreferences, putPreferences } from '../lib/api'
 import {
   DEFAULT_PREFERENCES,
@@ -16,6 +15,7 @@ import {
   loadPreferences,
   normalizePreferences,
   savePreferences,
+  THEMES,
   type UserPreferences,
 } from '../lib/preferences'
 
@@ -34,10 +34,9 @@ const PreferencesContext = createContext<PreferencesContextValue | null>(null)
 /** Pushes preference values into the DOM (theme class, test font, document lang). */
 function applyToDocument(prefs: UserPreferences) {
   const root = document.documentElement
-  root.classList.toggle('dark', prefs.theme === 'dark')
+  root.dataset.theme = prefs.theme
+  root.classList.toggle('dark', THEMES[prefs.theme].dark)
   root.style.setProperty('--font-test', FONTS[prefs.font].stack)
-  root.lang = prefs.language
-  if (i18n.language !== prefs.language) void i18n.changeLanguage(prefs.language)
 }
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
@@ -47,11 +46,15 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const remoteLoaded = useRef(false)
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Persist locally + reflect into the DOM on every change.
+  // Reflect into the DOM on every change, and persist to the right store. While
+  // Clerk is still resolving (isSignedIn === undefined) we apply the theme but skip
+  // the write — otherwise we'd wipe a signed-in user's localStorage cache and flash
+  // the default theme. The effect re-runs once isSignedIn settles.
   useEffect(() => {
-    savePreferences(prefs)
     applyToDocument(prefs)
-  }, [prefs])
+    if (isSignedIn === undefined) return
+    savePreferences(prefs, isSignedIn === true)
+  }, [prefs, isSignedIn])
 
   // Debounced push to the signed-in user's profile. Failures are swallowed —
   // localStorage stays the source of truth (same rule as the Redis cache).
@@ -80,7 +83,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   )
 
   const toggleTheme = useCallback(() => {
-    update({ theme: prefs.theme === 'dark' ? 'light' : 'dark' })
+    update({ theme: THEMES[prefs.theme].counterpart })
   }, [prefs.theme, update])
 
   const reset = useCallback(() => {

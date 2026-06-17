@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CharState } from '../hooks/useTypingTest'
 
 interface TypingAreaProps {
@@ -9,15 +9,16 @@ interface TypingAreaProps {
 }
 
 const charClass = (state: CharState | undefined): string => {
-  if (state === 'correct') return 'text-zinc-900 dark:text-zinc-100'
-  if (state === 'incorrect') return 'text-red-500 underline decoration-red-500 dark:text-red-400 dark:decoration-red-400'
-  return 'text-zinc-400 dark:text-zinc-500'
+  if (state === 'correct') return 'text-fg'
+  if (state === 'incorrect') return 'text-error underline decoration-error'
+  return 'text-faint'
 }
 
 export function TypingArea({ target, charStates, index, onKey }: TypingAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const caretRef = useRef<HTMLDivElement>(null)
   const charRefs = useRef<(HTMLSpanElement | null)[]>([])
+  const [capsOn, setCapsOn] = useState(false)
 
   // Caret position: plain CSS transform, no animation library. Must be instant.
   useLayoutEffect(() => {
@@ -44,6 +45,9 @@ export function TypingArea({ target, charStates, index, onKey }: TypingAreaProps
   // Clerk modals) and shortcut chords.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // Surface a Caps-Lock heads-up regardless of which key fired the event.
+      const caps = e.getModifierState('CapsLock')
+      setCapsOn((prev) => (prev === caps ? prev : caps))
       if (e.repeat) return // holding a key types it only once
       if (e.ctrlKey || e.metaKey || e.altKey) return
       const t = e.target as HTMLElement | null
@@ -57,30 +61,37 @@ export function TypingArea({ target, charStates, index, onKey }: TypingAreaProps
   }, [onKey])
 
   return (
-    <div
-      ref={containerRef}
-      // Font comes from user preferences (--font-test); the rest of the UI
-      // stays in Nunito.
-      style={{ fontFamily: 'var(--font-test)' }}
-      className="relative max-h-40 overflow-hidden rounded-lg bg-zinc-200/60 dark:bg-zinc-800/50 p-6 text-2xl leading-relaxed tracking-wide"
-    >
+    <div className="flex flex-col gap-2">
+      {capsOn && (
+        <div className="rounded-md bg-surface px-3 py-1.5 text-center text-sm font-medium text-error">
+          ⚠ Caps Lock is on
+        </div>
+      )}
       <div
-        ref={caretRef}
-        className="pointer-events-none absolute left-0 top-0 h-9 w-0.5 bg-emerald-400 transition-transform duration-75"
-        style={{ willChange: 'transform' }}
-      />
-      <div className="select-none whitespace-pre-wrap break-words">
-        {[...target].map((ch, i) => (
-          <span
-            key={i}
-            ref={(el) => {
-              charRefs.current[i] = el
-            }}
-            className={charClass(charStates[i])}
-          >
-            {ch}
-          </span>
-        ))}
+        ref={containerRef}
+        // Font comes from user preferences (--font-test); the rest of the UI
+        // stays in Nunito.
+        style={{ fontFamily: 'var(--font-test)' }}
+        className="relative max-h-40 overflow-hidden rounded-lg bg-surface p-6 text-2xl leading-relaxed tracking-wide"
+      >
+        <div
+          ref={caretRef}
+          className="pointer-events-none absolute left-0 top-0 h-9 w-0.5 bg-accent transition-transform duration-75"
+          style={{ willChange: 'transform' }}
+        />
+        <div className="select-none whitespace-pre-wrap break-words">
+          {[...target].map((ch, i) => (
+            <span
+              key={i}
+              ref={(el) => {
+                charRefs.current[i] = el
+              }}
+              className={charClass(charStates[i])}
+            >
+              {ch}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   )

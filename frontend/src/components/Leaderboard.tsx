@@ -1,10 +1,16 @@
-import { useUser } from '@clerk/clerk-react'
+import { useAuth, useUser } from '@clerk/clerk-react'
 import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
+  follow,
+  getFollows,
   getLeaderboard,
+  searchUsers,
+  unfollow,
   type LeaderboardEntry,
+  type LeaderboardScope,
   type LeaderboardWindow,
+  type UserSummary,
 } from '../lib/api'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from '../lib/words'
 
@@ -24,35 +30,106 @@ const row = {
   show: { opacity: 1, x: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 26 } },
 }
 
+const selectClass = 'rounded-md border border-border bg-surface px-2 py-1 text-fg'
+
 export function Leaderboard() {
   const { user } = useUser()
+  const { getToken, isSignedIn } = useAuth()
   const [keySet, setKeySet] = useState<KeySetId>('all')
   const [difficulty, setDifficulty] = useState<Difficulty>('medium')
   const [window, setWindow] = useState<LeaderboardWindow>('all')
+  const [scope, setScope] = useState<LeaderboardScope>('global')
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null)
   const [error, setError] = useState(false)
 
+  // Rivals (followees) — drives the Friends scope + list highlighting.
+  const [follows, setFollows] = useState<UserSummary[]>([])
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<UserSummary[]>([])
+
+  const followUsernames = new Set(follows.map((f) => f.username))
+  const friendsGated = scope === 'friends' && !isSignedIn
+
+  const refreshFollows = useCallback(() => {
+    if (!isSignedIn) return
+    getToken().then((token) =>
+      getFollows(token)
+        .then((r) => setFollows(r.follows))
+        .catch(() => {}),
+    )
+  }, [getToken, isSignedIn])
+
   useEffect(() => {
+    refreshFollows()
+  }, [refreshFollows])
+
+  useEffect(() => {
+    if (friendsGated) return // signed-out + friends: render the gate, don't fetch
     let cancelled = false
     setEntries(null)
     setError(false)
-    getLeaderboard(keySet, difficulty, window)
+    getToken()
+      .then((token) => getLeaderboard(token, keySet, difficulty, window, scope))
       .then(({ entries }) => !cancelled && setEntries(entries))
       .catch(() => !cancelled && setError(true))
     return () => {
       cancelled = true
     }
-  }, [keySet, difficulty, window])
+  }, [keySet, difficulty, window, scope, friendsGated, getToken])
 
-  const selectClass = 'rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2 py-1 text-zinc-900 dark:text-zinc-100'
+  const runSearch = (q: string) => {
+    setQuery(q)
+    if (q.trim().length < 1) {
+      setResults([])
+      return
+    }
+    getToken().then((token) =>
+      searchUsers(token, q)
+        .then((r) => setResults(r.users))
+        .catch(() => setResults([])),
+    )
+  }
+
+  const addRival = (u: UserSummary) => {
+    getToken().then((token) =>
+      follow(token, u.id)
+        .then(() => {
+          setFollows((prev) => (prev.some((f) => f.id === u.id) ? prev : [...prev, u]))
+          setQuery('')
+          setResults([])
+        })
+        .catch(() => {}),
+    )
+  }
+
+  const removeRival = (u: UserSummary) => {
+    getToken().then((token) =>
+      unfollow(token, u.id)
+        .then(() => setFollows((prev) => prev.filter((f) => f.id !== u.id)))
+        .catch(() => {}),
+    )
+  }
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg bg-zinc-200/60 dark:bg-zinc-800/50 p-6">
+    <div className="flex flex-col gap-4 rounded-lg bg-surface p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          Leaderboard
-        </h2>
-        <div className="flex gap-2 text-sm">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Leaderboard</h2>
+        <div className="flex flex-wrap gap-2 text-sm">
+          {/* Scope toggle */}
+          <div className="flex overflow-hidden rounded-md border border-border">
+            {(['global', 'friends'] as LeaderboardScope[]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setScope(s)}
+                className={`px-3 py-1 capitalize ${
+                  scope === s ? 'bg-accent text-accent-contrast' : 'bg-surface text-muted'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
           <select value={keySet} onChange={(e) => setKeySet(e.target.value as KeySetId)} className={selectClass}>
             {Object.entries(KEY_SETS).map(([id, k]) => (
               <option key={id} value={id}>{k.label}</option>
@@ -71,35 +148,95 @@ export function Leaderboard() {
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-500 dark:text-red-400">Could not load the leaderboard.</p>}
-      {!error && entries === null && <p className="text-sm text-zinc-500">Loading…</p>}
-      {entries?.length === 0 && (
-        <p className="text-sm text-zinc-500">No entries yet for this mode — set the first score!</p>
+      {/* Rival management — Friends scope, signed-in only. */}
+      {scope === 'friends' && isSignedIn && (
+        <div className="flex flex-col gap-3 rounded-md bg-surface-2 p-4">
+          <div className="relative">
+            <input
+              value={query}
+              onChange={(e) => runSearch(e.target.value)}
+              placeholder="Add a rival by username…"
+              className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-fg"
+            />
+            {results.length > 0 && (
+              <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border border-border bg-surface shadow-lg">
+                {results.map((u) => {
+                  const already = follows.some((f) => f.id === u.id)
+                  return (
+                    <li key={u.id} className="flex items-center justify-between px-3 py-1.5 text-sm">
+                      <span className="truncate text-fg">{u.username}</span>
+                      <button
+                        type="button"
+                        disabled={already}
+                        onClick={() => addRival(u)}
+                        className="text-xs text-accent disabled:text-faint"
+                      >
+                        {already ? 'Following' : 'Follow'}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+          {follows.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {follows.map((f) => (
+                <span key={f.id} className="flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-xs text-fg">
+                  {f.username}
+                  <button
+                    type="button"
+                    onClick={() => removeRival(f)}
+                    className="text-muted hover:text-error"
+                    aria-label={`Unfollow ${f.username}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
-      {entries && entries.length > 0 && (
+      {friendsGated && (
+        <p className="text-sm text-muted">Sign in to compare with friends.</p>
+      )}
+      {error && <p className="text-sm text-error">Could not load the leaderboard.</p>}
+      {!friendsGated && !error && entries === null && <p className="text-sm text-muted">Loading…</p>}
+      {!friendsGated && entries?.length === 0 && (
+        <p className="text-sm text-muted">
+          {scope === 'friends'
+            ? 'No scores from your rivals yet — add some above or set the pace.'
+            : 'No entries yet for this mode — set the first score!'}
+        </p>
+      )}
+
+      {!friendsGated && entries && entries.length > 0 && (
         <motion.ol variants={list} initial="hidden" animate="show" className="flex flex-col">
           {entries.map((e, i) => {
             const isMe = user?.username != null && e.username === user.username
+            const isRival = !isMe && e.username != null && followUsernames.has(e.username)
             return (
               <motion.li
                 key={`${e.username}-${i}`}
                 variants={row}
-                className={`flex items-baseline gap-4 border-t border-zinc-300 dark:border-zinc-700/50 py-2 first:border-t-0 ${
-                  isMe ? 'rounded bg-emerald-500/10 px-2' : ''
+                className={`flex items-baseline gap-4 border-t border-border py-2 first:border-t-0 ${
+                  isMe ? 'rounded bg-accent/10 px-2' : isRival ? 'rounded bg-surface-2 px-2' : ''
                 }`}
               >
-                <span className={`w-8 text-right font-mono ${i < 3 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500'}`}>
+                <span className={`w-8 text-right font-mono ${i < 3 ? 'text-accent' : 'text-muted'}`}>
                   {i + 1}
                 </span>
-                <span className={`flex-1 truncate ${isMe ? 'font-semibold text-emerald-300' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                <span className={`flex-1 truncate ${isMe ? 'font-semibold text-accent' : 'text-fg'}`}>
                   {e.username ?? 'anonymous'}
+                  {isRival && <span className="ml-2 text-xs text-muted">rival</span>}
                 </span>
-                <span className="font-mono text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                <span className="font-mono text-lg font-bold text-fg">
                   {Number(e.wpm).toFixed(0)}
-                  <span className="ml-1 text-xs font-normal text-zinc-500">wpm</span>
+                  <span className="ml-1 text-xs font-normal text-muted">wpm</span>
                 </span>
-                <span className="w-16 text-right text-sm text-zinc-500 dark:text-zinc-400">
+                <span className="w-16 text-right text-sm text-muted">
                   {Number(e.accuracy).toFixed(1)}%
                 </span>
               </motion.li>

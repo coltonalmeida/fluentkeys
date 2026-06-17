@@ -2,9 +2,12 @@ import "./env.js";
 import { clerkMiddleware } from "@clerk/express";
 import cors from "cors";
 import express from "express";
+import { achievementsRouter } from "./achievements.js";
 import { authRouter } from "./auth.js";
+import { followsRouter } from "./follows.js";
 import { leaderboardRouter } from "./leaderboard.js";
 import { resultsRouter } from "./results.js";
+import { statsRouter } from "./stats.js";
 import { trainingRouter } from "./training.js";
 
 const app = express();
@@ -25,7 +28,10 @@ app.get("/health", (_req, res) => {
 app.use("/auth", authRouter);
 app.use("/", leaderboardRouter);
 app.use("/", resultsRouter);
+app.use("/", statsRouter);
 app.use("/", trainingRouter);
+app.use("/", achievementsRouter);
+app.use("/", followsRouter);
 
 app.listen(port, "0.0.0.0", () => {
   console.log(`fluentkeys backend listening on port ${port}`);

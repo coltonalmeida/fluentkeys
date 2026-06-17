@@ -29,7 +29,7 @@ export function NavPanel() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 flex h-14 flex-row items-center justify-around border-t border-zinc-200 bg-zinc-100/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/90 sm:inset-y-0 sm:left-auto sm:right-0 sm:h-full sm:w-16 sm:flex-col sm:justify-start sm:gap-2 sm:border-l sm:border-t-0 sm:py-6"
+      className="fixed inset-x-0 bottom-0 z-30 flex h-14 flex-row items-center justify-around border-t border-border bg-bg/90 backdrop-blur sm:inset-y-0 sm:left-auto sm:right-0 sm:h-full sm:w-16 sm:flex-col sm:justify-start sm:gap-2 sm:border-l sm:border-t-0 sm:py-6"
     >
       {ITEMS.map(({ to, icon: Icon, labelKey }) => (
         <NavLink
@@ -41,8 +41,8 @@ export function NavPanel() {
           className={({ isActive }) =>
             `flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
               isActive
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                : 'text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
+                ? 'bg-accent/15 text-accent'
+                : 'text-faint hover:bg-surface hover:text-fg'
             }`
           }
         >

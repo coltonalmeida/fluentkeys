@@ -2,16 +2,25 @@ import { useAuth } from '@clerk/clerk-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AchievementToast } from '../components/AchievementToast'
 import { KeyboardVisual } from '../components/KeyboardVisual'
 import { ResultsScreen } from '../components/ResultsScreen'
 import { TypingArea } from '../components/TypingArea'
+import { useHotkeys } from '../hooks/useHotkeys'
 import { usePreferences } from '../hooks/usePreferences'
-import { useTypingTest, type TestSettings } from '../hooks/useTypingTest'
+import { useTypingTest, type TestMode, type TestSettings } from '../hooks/useTypingTest'
 import { apiRequest, getWeakKeys, postResult, type User } from '../lib/api'
+import { formatCombo } from '../lib/hotkeys'
 import { getLayout } from '../lib/keyboard'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from '../lib/words'
 
 const DURATIONS = [5, 15, 30, 60] as const
+const MODES: [TestMode, string][] = [
+  ['words', 'Words'],
+  ['punctuation', 'Punctuation'],
+  ['numbers', 'Numbers'],
+  ['quotes', 'Quotes'],
+]
 
 // The timed test (/test). The unboxing animation belongs to the home page only,
 // so this page shows its keyboard immediately.
@@ -24,15 +33,40 @@ export function PracticePage() {
     keySet: 'all',
     difficulty: 'medium',
     duration: 30,
+    mode: 'words',
   })
   const { isSignedIn, getToken } = useAuth()
   const [persistedWeakKeys, setPersistedWeakKeys] = useState<Record<string, number> | undefined>()
-  const { target, charStates, index, status, timeLeft, stats, handleKey, restart, missCounts } =
-    useTypingTest(settings, persistedWeakKeys)
+  const {
+    target,
+    attribution,
+    charStates,
+    index,
+    status,
+    timeLeft,
+    stats,
+    timeline,
+    liveWpm,
+    liveAccuracy,
+    handleKey,
+    restart,
+    missCounts,
+  } = useTypingTest(settings, persistedWeakKeys)
 
   const [flashKeyId, setFlashKeyId] = useState<string | null>(null)
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isPersonalBest, setIsPersonalBest] = useState(false)
+  const [newAchievements, setNewAchievements] = useState<string[]>([])
+
+  // Restart hotkey (default Tab) — works mid-test and on the results screen.
+  useHotkeys({ restart })
+
+  // Auto-dismiss the achievement toast.
+  useEffect(() => {
+    if (newAchievements.length === 0) return
+    const id = setTimeout(() => setNewAchievements([]), 3500)
+    return () => clearTimeout(id)
+  }, [newAchievements])
 
   // Wrong keypresses flash the offending key on the visual keyboard.
   const handleTestKey = (key: string) => {
@@ -84,7 +118,10 @@ export function PracticePage() {
           },
         }),
       )
-      .then(({ isPersonalBest }) => setIsPersonalBest(isPersonalBest))
+      .then(({ isPersonalBest, newlyEarned }) => {
+        setIsPersonalBest(isPersonalBest)
+        if (newlyEarned.length > 0) setNewAchievements(newlyEarned)
+      })
       .catch((err) => console.error('failed to save result:', err))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per finish
   }, [status])
@@ -109,15 +146,33 @@ export function PracticePage() {
             onChange={(v) => setSettings((s) => ({ ...s, difficulty: v as Difficulty }))}
           />
           <Selector
+            label="mode"
+            value={settings.mode}
+            options={MODES}
+            onChange={(v) => setSettings((s) => ({ ...s, mode: v as TestMode }))}
+          />
+          <Selector
             label={t('practice.time')}
             value={String(settings.duration)}
             options={DURATIONS.map((d) => [String(d), `${d}s`])}
             onChange={(v) => setSettings((s) => ({ ...s, duration: Number(v) }))}
           />
         </div>
-        <span className="font-mono text-2xl tabular-nums text-zinc-500 dark:text-zinc-400">
-          {status === 'running' ? `${timeLeft}s` : `${settings.duration}s`}
-        </span>
+        <div className="flex items-center gap-4 font-mono tabular-nums text-muted">
+          {status === 'running' && (
+            <>
+              <span>
+                <span className="text-accent">{liveWpm}</span> wpm
+              </span>
+              <span>
+                <span className="text-fg">{liveAccuracy}</span>% acc
+              </span>
+            </>
+          )}
+          <span className="text-2xl">
+            {status === 'running' ? `${timeLeft}s` : `${settings.duration}s`}
+          </span>
+        </div>
       </div>
 
       {/* Test box — bounded so it never shares space with the keyboard. */}
@@ -130,7 +185,14 @@ export function PracticePage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, y: -16 }}
             >
-              <ResultsScreen stats={stats} onRestart={restart} isPersonalBest={isPersonalBest} />
+              <ResultsScreen
+                stats={stats}
+                timeline={timeline}
+                missCounts={missCounts}
+                attribution={attribution}
+                onRestart={restart}
+                isPersonalBest={isPersonalBest}
+              />
             </motion.div>
           ) : (
             <motion.div
@@ -147,7 +209,7 @@ export function PracticePage() {
       </section>
 
       {/* Explicit divider: keeps clear vertical rhythm between the two blocks. */}
-      {showKeyboard && <hr className="border-zinc-200 dark:border-zinc-800" />}
+      {showKeyboard && <hr className="border-border" />}
 
       {/* Keyboard block — bounded min-height, centered. */}
       {showKeyboard && (
@@ -156,9 +218,15 @@ export function PracticePage() {
         </section>
       )}
 
-      <p className="text-center text-sm text-zinc-500 dark:text-zinc-600">
-        {status === 'idle' ? t('practice.hintPractice') : ' '}
+      <p className="text-center text-sm text-muted">
+        {status === 'idle'
+          ? t('practice.hintPractice')
+          : `Press ${formatCombo(prefs.hotkeys.restart)} to restart`}
       </p>
+
+      <AnimatePresence>
+        {newAchievements.length > 0 && <AchievementToast keys={newAchievements} />}
+      </AnimatePresence>
     </div>
   )
 }
@@ -175,12 +243,12 @@ function Selector({
   onChange: (value: string) => void
 }) {
   return (
-    <label className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+    <label className="flex items-center gap-2 text-muted">
       {label}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+        className="rounded-md border border-border bg-surface px-2 py-1 text-fg"
       >
         {options.map(([id, text]) => (
           <option key={id} value={id}>

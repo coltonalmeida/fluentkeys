@@ -1,5 +1,6 @@
 import { getAuth } from '@clerk/express'
 import { Router, type NextFunction, type Request, type Response } from 'express'
+import { evaluateAchievements } from './achievements.js'
 import { requireSignedIn, upsertUser } from './auth.js'
 import { pool } from './db.js'
 
@@ -83,8 +84,9 @@ resultsRouter.post(
          VALUES ($1, $2, $3, $4, $5)`,
         [user.id, parsed.keySet, parsed.difficulty, parsed.wpm, parsed.accuracy],
       )
+      const newlyEarned = await evaluateAchievements(client, user.id)
       await client.query('COMMIT')
-      res.status(201).json({ resultId, isPersonalBest: pb.rowCount === 1 })
+      res.status(201).json({ resultId, isPersonalBest: pb.rowCount === 1, newlyEarned })
     } catch (err) {
       await client.query('ROLLBACK')
       throw err

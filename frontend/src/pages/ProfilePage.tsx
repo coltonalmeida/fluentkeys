@@ -1,5 +1,7 @@
-import { SignedIn, SignedOut, SignInButton } from '@clerk/clerk-react'
+import { SignedIn, SignedOut } from '@clerk/clerk-react'
 import { useTranslation } from 'react-i18next'
+import { AccountPrompt } from '../components/AccountPrompt'
+import { LocalProgress } from '../components/LocalProgress'
 import { StatsPanel } from '../components/StatsPanel'
 
 export function ProfilePage() {
@@ -12,17 +14,8 @@ export function ProfilePage() {
         <StatsPanel />
       </SignedIn>
       <SignedOut>
-        <div className="flex flex-col items-start gap-4 rounded-xl bg-zinc-200/60 p-6 dark:bg-zinc-800/50">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">{t('profile.signInPrompt')}</p>
-          <SignInButton mode="modal">
-            <button
-              type="button"
-              className="rounded-md bg-emerald-500 px-5 py-2 text-sm font-semibold text-zinc-900 hover:bg-emerald-400"
-            >
-              {t('header.login')}
-            </button>
-          </SignInButton>
-        </div>
+        <LocalProgress />
+        <AccountPrompt context="profile" />
       </SignedOut>
     </div>
   )

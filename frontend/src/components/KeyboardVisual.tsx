@@ -86,7 +86,7 @@ export function KeyboardVisual({
           keyboard off the center it held during the unboxing animation. */}
       <div className="relative">
         <div
-          className="flex flex-col gap-1.5 rounded-xl bg-zinc-300 p-3 shadow-lg dark:bg-zinc-800"
+          className="flex flex-col gap-1.5 rounded-xl bg-surface-2 p-3 shadow-lg"
           style={{ ['--u' as string]: '3rem' }}
         >
           {layout.rows.map((row, i) => (
@@ -110,8 +110,8 @@ export function KeyboardVisual({
             onClick={() => setShowLegend((s) => !s)}
             className={`absolute bottom-1 left-full ml-2 flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
               showLegend
-                ? 'text-emerald-500 dark:text-emerald-400'
-                : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
+                ? 'text-accent'
+                : 'text-faint hover:text-fg'
             }`}
           >
             <Info size={18} />
@@ -193,7 +193,7 @@ const LEGEND_FINGERS: Finger[] = [
 
 function Legend() {
   return (
-    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted">
       {LEGEND_FINGERS.map((finger) => (
         <span key={finger} className="flex items-center gap-1.5">
           <span

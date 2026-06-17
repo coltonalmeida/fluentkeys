@@ -24,8 +24,86 @@
   --font-mono: 'Nunito', ui-monospace, monospace;
 }
 
+/* Semantic color tokens. `@theme inline` makes the generated utilities
+   (bg-bg, bg-surface, text-fg, text-accent, …) reference the CSS variables at
+   runtime, so they respond to the active theme instead of resolving at build
+   time. Each theme is selected by a `data-theme` attribute on <html>; the
+   `.dark` class is also toggled for any dark-family theme so the legacy
+   `.dark`-keyed bits (the cursor gradient, the heatmap cell ring) keep working.
+   Palette values live once per theme below. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2); /* elevated tiles / hover */
+  --color-border: var(--border);
+  --color-fg: var(--fg); /* primary text */
+  --color-muted: var(--muted); /* secondary text */
+  --color-faint: var(--faint); /* disabled / locked */
+  --color-accent: var(--accent); /* logo, stats, buttons, caret, progress */
+  --color-accent-contrast: var(--accent-contrast); /* text/icon ON accent */
+  --color-error: var(--error); /* wrong keystrokes / destructive */
+}
+
+/* Classic Light — zinc + emerald (default; also covers data-theme='light'). */
+:root {
+  --bg: #f4f4f5;
+  --surface: #e4e4e7;
+  --surface-2: #f4f4f5;
+  --border: #d4d4d8;
+  --fg: #18181b;
+  --muted: #71717a;
+  --faint: #a1a1aa;
+  --accent: #059669;
+  --accent-contrast: #ffffff;
+  --error: #ef4444;
+}
+
+/* Classic Dark — zinc + emerald */
+[data-theme='dark'] {
+  --bg: #18181b;
+  --surface: #27272a;
+  --surface-2: #1f1f23;
+  --border: #3f3f46;
+  --fg: #f4f4f5;
+  --muted: #a1a1aa;
+  --faint: #71717a;
+  --accent: #34d399;
+  --accent-contrast: #18181b;
+  --error: #f87171;
+}
+
+/* Coffee — black/brown/beige + amber (dark-family) */
+[data-theme='coffee'] {
+  --bg: #000000;
+  --surface: #1f150c;
+  --surface-2: #2b1e12;
+  --border: #412d15;
+  --fg: #e1dcc9;
+  --muted: #9a8f7a;
+  --faint: #6b5e4a;
+  --accent: #e8a33d;
+  --accent-contrast: #1f150c;
+  --error: #f26d6d;
+}
+
+/* Cream — cream/beige + red (light-family) */
+[data-theme='cream'] {
+  --bg: #fffaf3;
+  --surface: #fff2db;
+  --surface-2: #ffe5bf;
+  --border: #f0dcbe;
+  --fg: #1f150c;
+  --muted: #7a6a52;
+  --faint: #b3a488;
+  --accent: #f62440;
+  --accent-contrast: #fffaf3;
+  --error: #d11d3b;
+}
+
 body {
   font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-fg);
 }
 
 /* Font used in the typing test box only — set from user preferences (and by
@@ -38,6 +116,24 @@ body {
 @media (pointer: fine) {
   * {
     cursor: none !important;
+  }
+
+  /* Clerk renders its auth UI (account modal, user menu) in a high-z portal that
+     sits above the custom cursor. Restore the native cursor there so its text
+     fields and buttons are usable. All Clerk elements are prefixed `cl-`. */
+  [class^='cl-'],
+  [class*=' cl-'],
+  [class^='cl-'] *,
+  [class*=' cl-'] * {
+    cursor: auto !important;
+  }
+  [class^='cl-'] button,
+  [class*=' cl-'] button,
+  [class^='cl-'] a,
+  [class*=' cl-'] a,
+  [class^='cl-'] [role='button'],
+  [class*=' cl-'] [role='button'] {
+    cursor: pointer !important;
   }
 }
 
@@ -54,14 +150,14 @@ body {
   box-shadow: 0 0 0 1.5px rgba(244, 244, 245, 0.55);
 }
 
-/* Newly unlocked key: an emerald glow that pulses for ~2s (trainer, spec §6.2). */
+/* Newly unlocked key: an accent glow that pulses for ~2s (trainer, spec §6.2). */
 @keyframes key-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 0 transparent;
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.55);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent) 55%, transparent);
   }
 }
 
