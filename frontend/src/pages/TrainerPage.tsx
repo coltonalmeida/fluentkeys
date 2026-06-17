@@ -7,9 +7,11 @@ import { SessionSummary } from '../components/SessionSummary'
 import { TypingArea } from '../components/TypingArea'
 import { UnlockToast } from '../components/UnlockToast'
 import { BoxLid } from '../components/Unboxing'
+import { useHotkeys } from '../hooks/useHotkeys'
 import { useIntro } from '../hooks/useIntro'
 import { usePreferences } from '../hooks/usePreferences'
 import { useTrainer } from '../hooks/useTrainer'
+import { formatCombo } from '../lib/hotkeys'
 import { getLayout } from '../lib/keyboard'
 import { TOTAL_LETTERS } from '../lib/unlocks'
 
@@ -50,8 +52,20 @@ export function TrainerPage() {
     return () => clearTimeout(id)
   }, [newAchievements, clearNewAchievements])
 
+  // Start/stop via rebindable hotkeys (default Space / Esc). Gated by status so
+  // the bound keys only fire when meaningful: begin only from idle after the
+  // intro, stop only while running (stopping from idle would pop an empty
+  // summary). An undefined handler lets the key fall through to normal typing.
+  useHotkeys({
+    startPractice: introDone && trainer.status === 'idle' ? trainer.begin : undefined,
+    stopPractice: trainer.status === 'running' ? trainer.stop : undefined,
+  })
+
   const handleKey = (key: string) => {
     if (!introDone) return // no typing while the box is still on
+    // Until the session is running, swallow typing — the start hotkey (handled by
+    // useHotkeys above) arms it; everything else is ignored (no wrong-key flash).
+    if (trainer.status !== 'running') return
     // Flash the wrongly-pressed key on the visual keyboard.
     if (key.length === 1 && trainer.nextChar && key !== trainer.nextChar) {
       const pressed = layout.charToKey[key]
@@ -82,13 +96,21 @@ export function TrainerPage() {
           <Stat label="Words" value={trainer.wordsTyped} />
         </div>
         {trainer.status === 'running' && (
-          <button
-            type="button"
-            onClick={trainer.stop}
-            className="rounded-md border border-border px-3 py-1 text-muted transition-colors hover:bg-surface"
-          >
-            Stop
-          </button>
+          <div className="flex items-center gap-2 text-xs text-faint">
+            <button
+              type="button"
+              onClick={trainer.stop}
+              className="rounded-md border border-border px-3 py-1 text-muted transition-colors hover:bg-surface"
+            >
+              Stop
+            </button>
+            <span>
+              or{' '}
+              <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-fg">
+                {formatCombo(prefs.hotkeys.stopPractice)}
+              </kbd>
+            </span>
+          </div>
         )}
       </motion.div>
 
@@ -110,7 +132,7 @@ export function TrainerPage() {
       <section className="flex min-h-[18rem] items-start justify-center overflow-visible">
         <div className="relative">
           <KeyboardVisual
-            nextChar={introDone ? trainer.nextChar : null}
+            nextChar={introDone && trainer.status === 'running' ? trainer.nextChar : null}
             flashKeyId={flashKeyId}
             showInfo={introDone}
             layout={layout}
@@ -127,6 +149,9 @@ export function TrainerPage() {
                 markPlayed()
               }}
             />
+          )}
+          {introDone && trainer.status === 'idle' && (
+            <StartGate onStart={trainer.begin} startKey={prefs.hotkeys.startPractice} />
           )}
         </div>
       </section>
@@ -159,6 +184,31 @@ export function TrainerPage() {
           <SessionSummary summary={trainer.summary} onPracticeAgain={trainer.practiceAgain} />
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+/**
+ * Pre-session overlay: blurs the keyboard beneath and prompts the user to begin.
+ * Plain CSS (no Framer Motion — reserved for results/leaderboard per CLAUDE.md).
+ */
+function StartGate({ onStart, startKey }: { onStart: () => void; startKey: string }) {
+  return (
+    <div className="absolute -inset-3 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-bg/40 backdrop-blur-sm">
+      <p className="text-sm uppercase tracking-widest text-muted">
+        Press{' '}
+        <kbd className="animate-pulse rounded-md border border-border bg-surface px-3 py-1 font-mono text-fg">
+          {formatCombo(startKey)}
+        </kbd>{' '}
+        to start
+      </p>
+      <button
+        type="button"
+        onClick={onStart}
+        className="rounded-md border border-border bg-surface px-4 py-1.5 text-sm text-fg transition-colors hover:bg-surface-2"
+      >
+        Start practice
+      </button>
     </div>
   )
 }

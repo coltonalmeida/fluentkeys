@@ -26,14 +26,14 @@ describe('computeStrength', () => {
     expect(computeStrength(samples)).toBeCloseTo(100, 5)
   })
 
-  it('weights accuracy at 50%: 50% correct + perfect speed/consistency = 75', () => {
+  it('weights accuracy at 45%: 50% correct + perfect speed/consistency = 77.5', () => {
     // 150ms everywhere → speed 100, stdDev 0 → consistency 100; half correct → accuracy 50.
     const samples = [
       ...Array.from({ length: 20 }, () => sample(true, 150)),
       ...Array.from({ length: 20 }, () => sample(false, 150)),
     ]
-    // 50*0.5 + 100*0.35 + 100*0.15 = 75
-    expect(computeStrength(samples)).toBeCloseTo(75, 5)
+    // 50*0.45 + 100*0.45 + 100*0.10 = 77.5
+    expect(computeStrength(samples)).toBeCloseTo(77.5, 5)
   })
 
   it('penalizes slow reactions through the speed sub-score', () => {

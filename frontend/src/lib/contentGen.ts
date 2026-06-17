@@ -7,8 +7,10 @@ import { WORD_LIST } from './wordlist'
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u'])
 /** Below this many eligible real words, supplement with pseudowords (§4.1). */
 const MIN_REAL_WORDS = 20
-const WORDS_PER_LINE_MIN = 8
-const WORDS_PER_LINE_MAX = 12
+const WORDS_PER_LINE_MIN = 16
+const WORDS_PER_LINE_MAX = 24
+/** Cap made-up words per line so lines read as real English (§4.1). */
+const MAX_PSEUDO_PER_LINE = 2
 const PSEUDO_TEMPLATES = ['cv', 'cvc', 'cvcc', 'cvcv', 'cvccv'] as const
 
 // Tiny blocklist so generated pseudowords never read as slurs/profanity (§4.3).
@@ -157,16 +159,27 @@ export function generateLine(opts: LineOptions, rng: Rng = Math.random): string 
   const weights = pool.map((w) => practiceValue(w, opts))
   const total = weights.reduce((a, b) => a + b, 0)
 
+  // Pseudowords (starved-letter filler like "jaga") are anything not in the real
+  // eligible set. Cap how many land in a line so lines read as real English.
+  const realSet = new Set(eligible)
+  const isPseudo = (w: string) => !realSet.has(w)
+
   const span = WORDS_PER_LINE_MAX - WORDS_PER_LINE_MIN + 1
   const count = WORDS_PER_LINE_MIN + Math.floor(rng() * span)
 
   const words: string[] = []
+  const usedPseudo = new Set<string>()
   let last = ''
   let guard = 0
   while (words.length < count) {
     const picked = weightedPick(pool, weights, total, rng)
-    if (picked === last && pool.length > 1 && guard++ < 50) continue
+    // Re-pick on an immediate repeat, or a pseudoword that repeats / exceeds the
+    // per-line cap. guard caps the retries so a pseudoword-only pool can't spin.
+    const pseudoBlocked =
+      isPseudo(picked) && (usedPseudo.has(picked) || usedPseudo.size >= MAX_PSEUDO_PER_LINE)
+    if ((picked === last || pseudoBlocked) && pool.length > 1 && guard++ < 50) continue
     guard = 0
+    if (isPseudo(picked)) usedPseudo.add(picked)
     words.push(picked)
     last = picked
   }

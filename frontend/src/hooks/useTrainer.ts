@@ -92,9 +92,22 @@ export function useTrainer() {
     setIndex(value)
   }, [])
 
+  // Arm the session: typing is ignored until the user presses Space / clicks
+  // Start (gated in the UI behind the blurred keyboard), so a session begins on
+  // purpose rather than on a stray keystroke.
+  const begin = useCallback(() => {
+    if (statusRef.current !== 'idle') return
+    const now = Date.now()
+    statusRef.current = 'running'
+    setStatus('running')
+    sessionStartRef.current = now
+    sessionStartStrengthRef.current = strengthMapFrom(getSnapshot().windows)
+    charShownAtRef.current = now
+  }, [getSnapshot])
+
   const onKey = useCallback(
     (key: string) => {
-      if (statusRef.current === 'finished') return
+      if (statusRef.current !== 'running') return // gated until begin() (§ start gate)
       if (key === 'Backspace') return // disabled by default — confront errors (§5.2)
       if (key.length !== 1) return
 
@@ -104,14 +117,6 @@ export function useTrainer() {
       if (expected === undefined) return
 
       const now = Date.now()
-      if (statusRef.current === 'idle') {
-        statusRef.current = 'running'
-        setStatus('running')
-        sessionStartRef.current = now
-        sessionStartStrengthRef.current = strengthMapFrom(getSnapshot().windows)
-        charShownAtRef.current = now
-      }
-
       const reactionMs = clamp(now - charShownAtRef.current, 0, MAX_REACTION_MS)
       const correct = key === expected
 
@@ -186,7 +191,17 @@ export function useTrainer() {
   }, [status])
 
   const stop = useCallback(() => {
-    if (statusRef.current === 'finished') return
+    if (statusRef.current !== 'running') return
+
+    // A session with zero keystrokes counts for nothing — just disarm back to
+    // idle (no save, no summary, no cloud post), as if it was never started.
+    if (totalPressesRef.current === 0) {
+      sessionStartRef.current = null
+      statusRef.current = 'idle'
+      setStatus('idle')
+      return
+    }
+
     statusRef.current = 'finished'
     setStatus('finished')
 
@@ -321,6 +336,7 @@ export function useTrainer() {
     clearJustUnlocked,
     // session
     status,
+    begin,
     stop,
     practiceAgain,
     summary,

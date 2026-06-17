@@ -33,13 +33,22 @@ describe('eligibleWords', () => {
 })
 
 describe('generateLine', () => {
-  it('produces 8–12 words using only unlocked letters', () => {
+  it('produces 16–24 words using only unlocked letters', () => {
     for (let seed = 1; seed <= 25; seed++) {
       const line = generateLine({ unlocked: HOME_ROW, strength: {} }, seededRng(seed))
       const words = line.split(' ')
-      expect(words.length).toBeGreaterThanOrEqual(8)
-      expect(words.length).toBeLessThanOrEqual(12)
+      expect(words.length).toBeGreaterThanOrEqual(16)
+      expect(words.length).toBeLessThanOrEqual(24)
       expect(words.every((w) => onlyUses(w, HOME_ROW))).toBe(true)
+    }
+  })
+
+  it('keeps lines mostly real — at most 2 distinct made-up words per line', () => {
+    const real = new Set(eligibleWords(HOME_ROW))
+    for (let seed = 1; seed <= 25; seed++) {
+      const words = generateLine({ unlocked: HOME_ROW, strength: {} }, seededRng(seed)).split(' ')
+      const pseudo = new Set(words.filter((w) => !real.has(w)))
+      expect(pseudo.size).toBeLessThanOrEqual(2)
     }
   })
 

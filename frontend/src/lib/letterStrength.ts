@@ -46,7 +46,9 @@ function stdDev(values: number[]): number {
 
 /**
  * Strength 0–100 from a letter's sample window:
- *   accuracy 50% + speed 35% (sigmoid on median reaction) + consistency 15%.
+ *   accuracy 45% + speed 45% (sigmoid on median reaction) + consistency 10%.
+ * The speed curve is steep — a ~750ms median reaction floors speed to 0 — so
+ * slow words cost real strength (the longer you dwell on a word, the harsher).
  * Empty window → 0 (a never-practiced letter).
  */
 export function computeStrength(samples: KeyEvent[]): number {
@@ -57,10 +59,10 @@ export function computeStrength(samples: KeyEvent[]): number {
   const accuracyScore = (correct / total) * 100
 
   const reactions = samples.map((s) => s.reactionMs)
-  const speedScore = clamp(100 - (median(reactions) - 150) / 10.5, 0, 100)
+  const speedScore = clamp(100 - (median(reactions) - 150) / 6, 0, 100)
   const consistencyScore = clamp(100 - stdDev(reactions) / 8, 0, 100)
 
-  return accuracyScore * 0.5 + speedScore * 0.35 + consistencyScore * 0.15
+  return accuracyScore * 0.45 + speedScore * 0.45 + consistencyScore * 0.1
 }
 
 /** Append a sample to a letter's window, trimming to the rolling size. */

@@ -41,6 +41,8 @@ export type HotkeyAction =
   | 'goLeaderboard'
   | 'goProfile'
   | 'goSettings'
+  | 'startPractice'
+  | 'stopPractice'
 
 export const HOTKEYS: Record<HotkeyAction, { label: string; default: string }> = {
   restart: { label: 'Restart test', default: 'Tab' },
@@ -49,6 +51,8 @@ export const HOTKEYS: Record<HotkeyAction, { label: string; default: string }> =
   goLeaderboard: { label: 'Go to Leaderboard', default: 'alt+l' },
   goProfile: { label: 'Go to Profile', default: 'alt+p' },
   goSettings: { label: 'Go to Settings', default: 'alt+s' },
+  startPractice: { label: 'Start practice', default: 'Space' },
+  stopPractice: { label: 'Stop practice', default: 'Escape' },
 }
 
 const HOTKEY_ACTIONS = Object.keys(HOTKEYS) as HotkeyAction[]

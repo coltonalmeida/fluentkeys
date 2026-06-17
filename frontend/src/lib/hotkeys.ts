@@ -29,10 +29,15 @@ const MODIFIER_LABEL: Record<string, string> = {
   meta: 'Meta',
 }
 
+/** Friendlier names for a few non-printable keys (Space/Tab already read fine). */
+const KEY_LABEL: Record<string, string> = {
+  Escape: 'Esc',
+}
+
 /** Human-readable combo for the settings UI: "alt+t" → "Alt + T". */
 export function formatCombo(combo: string): string {
   return combo
     .split('+')
-    .map((p) => MODIFIER_LABEL[p] ?? (p.length === 1 ? p.toUpperCase() : p))
+    .map((p) => MODIFIER_LABEL[p] ?? KEY_LABEL[p] ?? (p.length === 1 ? p.toUpperCase() : p))
     .join(' + ')
 }
