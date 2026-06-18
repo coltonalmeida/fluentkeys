@@ -39,8 +39,55 @@ export async function upsertUser(clerkId: string): Promise<AppUser> {
     if (isUsernameConflict(err)) {
       return await runUserUpsert(clerkId, email, null)
     }
+    // The email is already held by a row with a different clerk_id — typically
+    // the same person returning under a new Clerk identity (a test→live instance
+    // switch issues a fresh clerk_id while their email is unchanged). ON CONFLICT
+    // (clerk_id) can't catch this, so re-link that row to the current identity
+    // rather than 500ing — the user keeps their history (results, PBs).
+    if (isEmailConflict(err) && email) {
+      return await relinkByEmail(clerkId, email, username)
+    }
     throw err
   }
+}
+
+/** Re-point an existing users row (matched by its unique email) at a new Clerk
+ *  identity. The original INSERT failed on the email constraint, not clerk_id,
+ *  so no row holds this clerk_id yet — the reassignment is safe. */
+async function relinkByEmail(
+  clerkId: string,
+  email: string,
+  username: string | null,
+): Promise<AppUser> {
+  try {
+    return await runRelink(clerkId, email, username)
+  } catch (err) {
+    // The derived username may collide with another row; keep the existing one.
+    if (isUsernameConflict(err)) {
+      return await runRelink(clerkId, email, null)
+    }
+    throw err
+  }
+}
+
+/** COALESCE keeps the row's existing username when Clerk's derived one is null
+ *  or would collide, so re-linking never erases a name the user already has. */
+async function runRelink(
+  clerkId: string,
+  email: string,
+  username: string | null,
+): Promise<AppUser> {
+  const { rows } = await pool.query<AppUser>(
+    `UPDATE users
+        SET clerk_id = $1,
+            username = COALESCE($3, username)
+      WHERE email = $2
+    RETURNING id, clerk_id, email, username, username_changed_at`,
+    [clerkId, email, username],
+  )
+  const user = rows[0]
+  if (!user) throw new Error('user relink matched no row')
+  return user
 }
 
 /** The upsert itself. COALESCE keeps an existing cached username if Clerk's is
@@ -69,6 +116,13 @@ function isUsernameConflict(err: unknown): boolean {
   if (typeof err !== 'object' || err === null) return false
   const e = err as { code?: string; constraint?: string }
   return e.code === '23505' && typeof e.constraint === 'string' && e.constraint.includes('username')
+}
+
+/** True for a Postgres unique-violation (23505) on the email constraint. */
+function isEmailConflict(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false
+  const e = err as { code?: string; constraint?: string }
+  return e.code === '23505' && typeof e.constraint === 'string' && e.constraint.includes('email')
 }
 
 /** JSON-API auth guard: 401 instead of Clerk's default redirect. */
