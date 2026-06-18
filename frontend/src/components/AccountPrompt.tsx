@@ -1,6 +1,7 @@
 import { useAuth, SignInButton, SignUpButton } from '@clerk/clerk-react'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
+import { useClerkAppearance } from '../hooks/useClerkAppearance'
 
 interface AccountPromptProps {
   /** Tailors the copy to where the prompt appears. */
@@ -31,6 +32,7 @@ const COPY = {
  */
 export function AccountPrompt({ context }: AccountPromptProps) {
   const { isSignedIn } = useAuth()
+  const clerkAppearance = useClerkAppearance()
   const [dismissed, setDismissed] = useState(() => {
     try {
       return sessionStorage.getItem(DISMISS_KEY) === '1'
@@ -68,7 +70,7 @@ export function AccountPrompt({ context }: AccountPromptProps) {
         <p className="mb-6 text-center text-sm text-muted">{body}</p>
 
         <div className="flex flex-col gap-2">
-          <SignUpButton mode="modal">
+          <SignUpButton mode="modal" appearance={clerkAppearance}>
             <button
               type="button"
               className="w-full rounded-lg bg-accent px-4 py-2.5 font-semibold text-accent-contrast transition-colors hover:bg-accent/90"
@@ -77,7 +79,7 @@ export function AccountPrompt({ context }: AccountPromptProps) {
             </button>
           </SignUpButton>
 
-          <SignInButton mode="modal">
+          <SignInButton mode="modal" appearance={clerkAppearance}>
             <button
               type="button"
               className="w-full rounded-lg border border-border px-4 py-2 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-fg"

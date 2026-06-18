@@ -1,6 +1,7 @@
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
 import { useTranslation } from 'react-i18next'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { useClerkAppearance } from '../hooks/useClerkAppearance'
 import { useHotkeys } from '../hooks/useHotkeys'
 import { useIntro } from '../hooks/useIntro'
 import { usePreferences } from '../hooks/usePreferences'
@@ -14,6 +15,7 @@ import { UsernameGate } from './UsernameGate'
 export function Layout() {
   const { t } = useTranslation()
   const { prefs, toggleTheme } = usePreferences()
+  const clerkAppearance = useClerkAppearance()
   const navigate = useNavigate()
   // The header icons stay hidden while the home-page box lid is lifting, then
   // bleed in with the rest of the UI. Instant hide, soft fade-in.
@@ -50,7 +52,7 @@ export function Layout() {
             </Link>
             <div className="flex items-center gap-5">
               <SignedOut>
-                <SignInButton mode="modal">
+                <SignInButton mode="modal" appearance={clerkAppearance}>
                   <button
                     type="button"
                     className="text-sm text-muted underline hover:text-fg"
@@ -61,11 +63,14 @@ export function Layout() {
               </SignedOut>
               <SignedIn>
                 <StreakBadge />
-                {/* Clerk's "Restrict changes" setting makes the username read-only
-                    in the account portal, so our gated Settings editor is the only
-                    rename path. The Backend API still updates it, so the
-                    once-per-week endpoint keeps working. */}
-                <UserButton />
+                {/* "Manage account" navigates to our own /settings page instead of
+                    opening Clerk's editable modal — all account management (username,
+                    emails, connected accounts, password, delete) lives there. */}
+                <UserButton
+                  appearance={clerkAppearance}
+                  userProfileMode="navigation"
+                  userProfileUrl="/settings"
+                />
               </SignedIn>
               <ThemeToggle theme={prefs.theme} onToggle={toggleTheme} />
             </div>

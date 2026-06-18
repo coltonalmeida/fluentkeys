@@ -2,6 +2,7 @@ import { SignedIn, SignedOut, useAuth, useUser } from '@clerk/clerk-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
+import { AccountManager } from '../components/AccountManager'
 import { KeyboardVisual } from '../components/KeyboardVisual'
 import { usePreferences } from '../hooks/usePreferences'
 import { ApiError, getMe, updateUsername } from '../lib/api'
@@ -137,6 +138,12 @@ export function SettingsPage() {
           <p className="text-sm text-muted">{t('settings.accountSynced')}</p>
         </SignedIn>
       </Card>
+
+      {/* Self-service email / connected-accounts / password / delete, replacing
+          Clerk's hosted account modal. Signed-in only. */}
+      <SignedIn>
+        <AccountManager />
+      </SignedIn>
 
       <div>
         <button
