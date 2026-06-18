@@ -18,7 +18,9 @@ import { trainingRouter } from "./training.js";
 
 const isProd = process.env.NODE_ENV === "production";
 const app = express();
-const port = Number(process.env.PORT ?? 3001);
+// Use `||` not `??`: an empty-string PORT (e.g. a blank env var on the host)
+// would pass `??` and yield Number("") === 0, binding a random OS port.
+const port = Number(process.env.PORT) || 3001;
 
 // Behind Render/Railway/Vercel's proxy, so trust one hop for correct client IPs
 // (rate limiting keys on them) and protocol.
