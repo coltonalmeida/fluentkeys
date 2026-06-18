@@ -1,33 +1,36 @@
-# Render Blueprint — backend + Postgres only.
-# The frontend deploys to Vercel separately (Phase 8, pending domain purchase).
+# Render Blueprint — Express backend only.
+#
+# Postgres is hosted on Supabase (see DEPLOY.md), NOT provisioned here. The
+# backend talks to it via DATABASE_URL, set in the Render dashboard.
+#
+# The frontend deploys to Vercel separately.
 services:
   - type: web
     name: fluentkeys-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm ci && npm run build
-    # Migrations run before the server boots so the schema is always current.
-    startCommand: npm run migrate:prod && npm start
+    # NODE_ENV=production makes npm skip devDependencies, but the build needs
+    # TypeScript (a devDependency), so force it with --include=dev.
+    buildCommand: npm ci --include=dev && npm run build
+    # No migrations on boot: the Supabase schema is managed separately (run
+    # `npm run migrate:prod` from the Render Shell when a migration is needed).
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: fluentkeys-db
-          property: connectionString
-      - key: PGSSL
-        value: "true"
       - key: NODE_ENV
         value: production
+      - key: PGSSL
+        value: "true"
       # Set these in the Render dashboard (never committed):
+      # - DATABASE_URL: Supabase session-pooler connection string
+      # - CLERK_PUBLISHABLE_KEY / CLERK_SECRET_KEY
+      # - CORS_ORIGIN: deployed frontend origin(s), comma-separated
+      # Do NOT set PORT — Render injects it.
+      - key: DATABASE_URL
+        sync: false
       - key: CLERK_PUBLISHABLE_KEY
         sync: false
       - key: CLERK_SECRET_KEY
         sync: false
-      # Deployed frontend origin(s), comma-separated. Set once the frontend
-      # is live; until then the API allows all origins.
       - key: CORS_ORIGIN
         sync: false
-
-databases:
-  - name: fluentkeys-db
-    plan: free
