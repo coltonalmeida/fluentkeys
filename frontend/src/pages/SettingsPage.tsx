@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 import { AccountManager } from '../components/AccountManager'
 import { KeyboardVisual } from '../components/KeyboardVisual'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion'
 import { usePreferences } from '../hooks/usePreferences'
 import { ApiError, getMe, updateUsername } from '../lib/api'
 import { comboFromEvent, formatCombo, isModifierOnly } from '../lib/hotkeys'
@@ -135,9 +136,8 @@ export function SettingsPage() {
         </SignedOut>
         <SignedIn>
           <UsernameEditor />
-          <p className="text-sm text-muted">{t('settings.accountSynced')}</p>
-          {/* Self-service email / connected-accounts / password / delete as
-              divided sub-sections of this one card, replacing Clerk's modal. */}
+          {/* Self-service email / connected-accounts / password / sign-out /
+              delete as divided sub-sections of this one card. */}
           <AccountManager />
         </SignedIn>
       </Card>
@@ -348,14 +348,20 @@ function formatDate(iso: string): string {
 const selectClass =
   'rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-fg'
 
+/** A settings block rendered as a collapsible accordion: open by default,
+ *  independently minimizable. `title` doubles as the stable accordion item id. */
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-4 rounded-xl bg-surface p-6">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-        {title}
-      </h2>
-      {children}
-    </section>
+    <Accordion type="single" collapsible defaultValue={title} className="rounded-xl bg-surface">
+      <AccordionItem value={title} className="border-0">
+        <AccordionTrigger className="px-6 py-4 text-sm font-semibold uppercase tracking-wider text-muted hover:text-fg hover:no-underline">
+          {title}
+        </AccordionTrigger>
+        <AccordionContent className="px-6 pb-6 pt-0">
+          <div className="flex flex-col gap-4">{children}</div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   )
 }
 

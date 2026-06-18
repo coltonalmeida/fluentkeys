@@ -1,4 +1,4 @@
-import { useReverification, useUser } from '@clerk/clerk-react'
+import { useClerk, useReverification, useUser } from '@clerk/clerk-react'
 import { isReverificationCancelledError } from '@clerk/clerk-react/errors'
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -23,8 +23,24 @@ export function AccountManager() {
       <EmailSection user={user} />
       <ConnectedAccountsSection user={user} />
       <PasswordSection user={user} />
+      <SignOutSection />
       <DangerSection user={user} />
     </>
+  )
+}
+
+function SignOutSection() {
+  const { signOut } = useClerk()
+  return (
+    <SubSection title="Sign out">
+      <button
+        type="button"
+        onClick={() => void signOut({ redirectUrl: '/' })}
+        className={secondaryBtn}
+      >
+        Sign out
+      </button>
+    </SubSection>
   )
 }
 

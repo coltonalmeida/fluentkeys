@@ -22,6 +22,10 @@
   --font-sans: 'Nunito', ui-sans-serif, system-ui, sans-serif;
   /* The whole app renders in Nunito by request — including former mono areas. */
   --font-mono: 'Nunito', ui-monospace, monospace;
+  /* Radix accordion collapse/expand (Settings blocks). Generates the
+     animate-accordion-down / animate-accordion-up utilities. */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
 }
 
 /* Semantic color tokens. `@theme inline` makes the generated utilities
@@ -163,4 +167,22 @@ body {
 
 .key-pulse {
   animation: key-pulse 0.8s ease-in-out 3;
+}
+
+/* Radix accordion: animate height between 0 and the measured content height. */
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
 }
