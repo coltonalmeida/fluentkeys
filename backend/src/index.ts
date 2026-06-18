@@ -15,6 +15,7 @@ import { leaderboardRouter } from "./leaderboard.js";
 import { resultsRouter } from "./results.js";
 import { statsRouter } from "./stats.js";
 import { trainingRouter } from "./training.js";
+import { webhooksRouter } from "./webhooks.js";
 
 const isProd = process.env.NODE_ENV === "production";
 const app = express();
@@ -40,6 +41,12 @@ if (isProd && !corsOrigins?.length) {
 }
 app.use(cors({ origin: corsOrigins ?? true }));
 
+// Clerk webhooks must be verified over the raw, unparsed body (Svix signs the
+// exact bytes). Scope a raw parser to the webhook path so it runs before — and
+// short-circuits — the global express.json below (which skips a request whose
+// body a prior parser already consumed). Every other route still gets JSON.
+app.use("/webhooks/clerk", express.raw({ type: "application/json", limit: "256kb" }));
+
 // Bound request bodies: the largest legit payload is a training session
 // (≤30 letters × 50 samples), comfortably under 256kb.
 app.use(express.json({ limit: "256kb" }));
@@ -61,6 +68,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "fluentkeys-backend" });
 });
 
+app.use("/", webhooksRouter);
 app.use("/auth", authRouter);
 app.use("/", leaderboardRouter);
 app.use("/", resultsRouter);
