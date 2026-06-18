@@ -94,7 +94,7 @@ function EmailSection({ user }: { user: ClerkUser }) {
   }
 
   return (
-    <Card title="Email addresses">
+    <SubSection title="Email addresses">
       <ul className="flex flex-col gap-2">
         {user.emailAddresses.map((email) => {
           const isPrimary = email.id === user.primaryEmailAddressId
@@ -168,7 +168,7 @@ function EmailSection({ user }: { user: ClerkUser }) {
       )}
 
       {error && <p className="text-xs text-error">{error}</p>}
-    </Card>
+    </SubSection>
   )
 }
 
@@ -216,7 +216,7 @@ function ConnectedAccountsSection({ user }: { user: ClerkUser }) {
   }
 
   return (
-    <Card title="Connected accounts">
+    <SubSection title="Connected accounts">
       {accounts.length === 0 && <p className="text-sm text-muted">No connected accounts.</p>}
       <ul className="flex flex-col gap-2">
         {accounts.map((account) => (
@@ -239,7 +239,7 @@ function ConnectedAccountsSection({ user }: { user: ClerkUser }) {
         </button>
       )}
       {error && <p className="text-xs text-error">{error}</p>}
-    </Card>
+    </SubSection>
   )
 }
 
@@ -292,7 +292,7 @@ function PasswordSection({ user }: { user: ClerkUser }) {
   }
 
   return (
-    <Card title="Password">
+    <SubSection title="Password">
       <p className="text-sm text-muted">
         {hasPassword
           ? 'Change or remove your password.'
@@ -330,7 +330,7 @@ function PasswordSection({ user }: { user: ClerkUser }) {
         </div>
       </div>
       {error && <p className="text-xs text-error">{error}</p>}
-    </Card>
+    </SubSection>
   )
 }
 
@@ -356,7 +356,7 @@ function DangerSection({ user }: { user: ClerkUser }) {
   }
 
   return (
-    <Card title="Delete account">
+    <SubSection title="Delete account">
       <p className="text-sm text-muted">
         Permanently delete your account and all your data — results, personal bests, leaderboard
         entries, and history. This cannot be undone.
@@ -385,7 +385,7 @@ function DangerSection({ user }: { user: ClerkUser }) {
         </button>
       )}
       {error && <p className="text-xs text-error">{error}</p>}
-    </Card>
+    </SubSection>
   )
 }
 
@@ -398,12 +398,14 @@ const secondaryBtn =
   'self-start rounded-md border border-border px-3 py-1.5 text-sm text-fg transition-colors hover:bg-surface-2 disabled:opacity-50'
 const rowClass = 'flex items-center justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2'
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
+/** A divided sub-section within the single Account card. The top border acts as
+ *  the separator between consecutive account controls. */
+function SubSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-4 rounded-xl bg-surface p-6">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{title}</h2>
+    <div className="flex flex-col gap-3 border-t border-border pt-5">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint">{title}</h3>
       {children}
-    </section>
+    </div>
   )
 }
 

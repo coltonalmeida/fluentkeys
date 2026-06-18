@@ -136,14 +136,11 @@ export function SettingsPage() {
         <SignedIn>
           <UsernameEditor />
           <p className="text-sm text-muted">{t('settings.accountSynced')}</p>
+          {/* Self-service email / connected-accounts / password / delete as
+              divided sub-sections of this one card, replacing Clerk's modal. */}
+          <AccountManager />
         </SignedIn>
       </Card>
-
-      {/* Self-service email / connected-accounts / password / delete, replacing
-          Clerk's hosted account modal. Signed-in only. */}
-      <SignedIn>
-        <AccountManager />
-      </SignedIn>
 
       <div>
         <button
