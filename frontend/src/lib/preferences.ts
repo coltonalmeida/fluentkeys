@@ -5,23 +5,32 @@
 // but a failed sync never blocks local use — same degrade-gracefully rule the
 // backend's Redis cache follows.
 
+import { COSMETICS_BY_ID } from './cosmetics'
 import type { LayoutId } from './keyboard'
 import { KEYBOARD_LAYOUTS } from './keyboard'
 
-export type Theme = 'light' | 'dark' | 'coffee' | 'cream'
+// The 4 base themes are free; 'midnight'/'sunset' are earnable cosmetics
+// (gated in the picker by ownership) but live in the same `theme` preference.
+export type Theme = 'light' | 'dark' | 'coffee' | 'cream' | 'midnight' | 'sunset'
 
 /**
  * Theme registry — single source of truth for the settings picker, the header
  * day/night toggle, and which family drives the `.dark` class.
  * - `dark`: dark-family (toggles the `.dark` class on <html>).
  * - `counterpart`: the paired theme the header ☀/🌙 toggle switches to.
+ * - `cosmetic`: when set, the cosmetic id that must be owned to select it.
  */
 export const THEMES = {
   light: { label: 'Classic Light', dark: false, counterpart: 'dark' },
   dark: { label: 'Classic Dark', dark: true, counterpart: 'light' },
   coffee: { label: 'Coffee', dark: true, counterpart: 'cream' },
   cream: { label: 'Cream', dark: false, counterpart: 'coffee' },
-} as const satisfies Record<Theme, { label: string; dark: boolean; counterpart: Theme }>
+  midnight: { label: 'Midnight', dark: true, counterpart: 'sunset', cosmetic: 'theme-midnight' },
+  sunset: { label: 'Sunset', dark: false, counterpart: 'midnight', cosmetic: 'theme-sunset' },
+} as const satisfies Record<
+  Theme,
+  { label: string; dark: boolean; counterpart: Theme; cosmetic?: string }
+>
 
 export type FontId =
   | 'roboto-mono'
@@ -29,6 +38,17 @@ export type FontId =
   | 'fira-code'
   | 'ibm-plex-mono'
   | 'source-code-pro'
+
+/** UI language (§23). Typing tests stay in English; this localizes the interface. */
+export type UiLanguage = 'en' | 'de' | 'es' | 'fr' | 'pt'
+
+export const UI_LANGUAGES: Record<UiLanguage, { label: string }> = {
+  en: { label: 'English' },
+  de: { label: 'Deutsch' },
+  es: { label: 'Español' },
+  fr: { label: 'Français' },
+  pt: { label: 'Português' },
+}
 
 /** Language used to generate snippets for the Code typing mode. */
 export type CodeLanguage = 'python' | 'javascript' | 'c'
@@ -67,6 +87,22 @@ export const HOTKEYS: Record<HotkeyAction, { label: string; default: string }> =
 
 const HOTKEY_ACTIONS = Object.keys(HOTKEYS) as HotkeyAction[]
 
+/** Equipped cosmetics (§15). caret + keyboardSkin affect the DOM; badge + frame
+ *  decorate the profile. Theme cosmetics live in `theme`, not here. */
+export interface EquippedCosmetics {
+  caret: string
+  keyboardSkin: string
+  badge: string | null
+  frame: string | null
+}
+
+export const DEFAULT_EQUIPPED: EquippedCosmetics = {
+  caret: 'caret-line',
+  keyboardSkin: 'kb-default',
+  badge: null,
+  frame: null,
+}
+
 export interface UserPreferences {
   /** Bumped whenever this shape changes so old stored blobs can be migrated. */
   version: number
@@ -78,10 +114,14 @@ export interface UserPreferences {
   dailyGoal: number
   /** Language for the Code typing mode's snippets. */
   codeLanguage: CodeLanguage
+  /** UI language (§23). */
+  language: UiLanguage
+  /** Equipped cosmetics (§15). */
+  equippedCosmetics: EquippedCosmetics
 }
 
 /** Bump when the stored shape changes; `migrate` handles older versions. */
-export const PREFERENCES_VERSION = 4
+export const PREFERENCES_VERSION = 6
 
 /** Selectable daily-goal options, in minutes. */
 export const DAILY_GOALS = [0, 5, 10, 15, 30, 60] as const
@@ -115,12 +155,15 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   hotkeys: defaultHotkeys(),
   dailyGoal: 10,
   codeLanguage: 'python',
+  language: 'en',
+  equippedCosmetics: { ...DEFAULT_EQUIPPED },
 }
 
 const THEME_IDS = Object.keys(THEMES) as Theme[]
 const FONT_IDS = Object.keys(FONTS) as FontId[]
 const LAYOUT_IDS = Object.keys(KEYBOARD_LAYOUTS) as LayoutId[]
 const CODE_LANGUAGE_IDS = Object.keys(CODE_LANGUAGES) as CodeLanguage[]
+const UI_LANGUAGE_IDS = Object.keys(UI_LANGUAGES) as UiLanguage[]
 
 function normalizeHotkeys(raw: unknown): Record<HotkeyAction, string> {
   const r = (raw ?? {}) as Partial<Record<HotkeyAction, unknown>>
@@ -130,6 +173,28 @@ function normalizeHotkeys(raw: unknown): Record<HotkeyAction, string> {
     out[a] = typeof v === 'string' && v.length > 0 ? v : HOTKEYS[a].default
   }
   return out
+}
+
+/** Coerce a stored cosmetic id to a valid one of the given kind, else fallback. */
+function normalizeCosmetic(raw: unknown, kind: string, fallback: string): string {
+  if (typeof raw === 'string' && COSMETICS_BY_ID.get(raw)?.kind === kind) return raw
+  return fallback
+}
+
+function normalizeEquipped(raw: unknown): EquippedCosmetics {
+  const e = (raw ?? {}) as Partial<EquippedCosmetics>
+  const badge = typeof e.badge === 'string' && COSMETICS_BY_ID.get(e.badge)?.kind === 'badge'
+    ? e.badge
+    : null
+  const frame = typeof e.frame === 'string' && COSMETICS_BY_ID.get(e.frame)?.kind === 'frame'
+    ? e.frame
+    : null
+  return {
+    caret: normalizeCosmetic(e.caret, 'caret', DEFAULT_EQUIPPED.caret),
+    keyboardSkin: normalizeCosmetic(e.keyboardSkin, 'keyboardSkin', DEFAULT_EQUIPPED.keyboardSkin),
+    badge,
+    frame,
+  }
 }
 
 /** Coerces an unknown blob into valid preferences, dropping anything invalid. */
@@ -149,6 +214,10 @@ export function normalizePreferences(raw: unknown): UserPreferences {
     codeLanguage: CODE_LANGUAGE_IDS.includes(p.codeLanguage as CodeLanguage)
       ? (p.codeLanguage as CodeLanguage)
       : DEFAULT_PREFERENCES.codeLanguage,
+    language: UI_LANGUAGE_IDS.includes(p.language as UiLanguage)
+      ? (p.language as UiLanguage)
+      : DEFAULT_PREFERENCES.language,
+    equippedCosmetics: normalizeEquipped(p.equippedCosmetics),
   }
 }
 

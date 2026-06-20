@@ -5,7 +5,9 @@ import { useClerkAppearance } from '../hooks/useClerkAppearance'
 import { useHotkeys } from '../hooks/useHotkeys'
 import { useIntro } from '../hooks/useIntro'
 import { usePreferences } from '../hooks/usePreferences'
+import { useReferral } from '../hooks/useReferral'
 import { Cursor } from './Cursor'
+import { LevelBadge } from './LevelBadge'
 import { NavPanel } from './NavPanel'
 import { StreakBadge } from './StreakBadge'
 import { ThemeToggle } from './ThemeToggle'
@@ -20,6 +22,9 @@ export function Layout() {
   // The header icons stay hidden while the home-page box lid is lifting, then
   // bleed in with the rest of the UI. Instant hide, soft fade-in.
   const { introPlaying } = useIntro()
+
+  // Capture/redeem ?ref= invite codes (§4).
+  useReferral()
 
   // Site-wide navigation hotkeys (rebindable in Settings).
   useHotkeys({
@@ -62,6 +67,7 @@ export function Layout() {
                 </SignInButton>
               </SignedOut>
               <SignedIn>
+                <LevelBadge />
                 <StreakBadge />
                 {/* "Manage account" navigates to our own /settings page instead of
                     opening Clerk's editable modal — all account management (username,

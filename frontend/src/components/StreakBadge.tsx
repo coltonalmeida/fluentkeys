@@ -3,6 +3,7 @@ import { Flame } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { usePreferences } from '../hooks/usePreferences'
 import { getStreak, type StreakResponse } from '../lib/api'
+import { Tooltip } from './ui/Tooltip'
 
 /**
  * Header flame + current-streak count for signed-in users, wrapped in a progress
@@ -43,7 +44,7 @@ export function StreakBadge() {
       : '')
 
   return (
-    <div title={title} className="flex items-center gap-1.5 text-sm">
+    <Tooltip label={title} side="bottom" className="items-center gap-1.5 text-sm">
       <span className="relative inline-flex h-7 w-7 items-center justify-center">
         {goalSecs > 0 && (
           <svg className="absolute inset-0" viewBox="0 0 28 28">
@@ -74,6 +75,6 @@ export function StreakBadge() {
         <Flame size={14} className={met ? 'text-accent' : 'text-muted'} />
       </span>
       <span className="font-semibold tabular-nums text-fg">{streak.current}</span>
-    </div>
+    </Tooltip>
   )
 }

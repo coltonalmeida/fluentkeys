@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import i18n from '../i18n'
 import { getPreferences, putPreferences } from '../lib/api'
 import {
   DEFAULT_PREFERENCES,
@@ -31,12 +32,19 @@ interface PreferencesContextValue {
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null)
 
-/** Pushes preference values into the DOM (theme class, test font, document lang). */
+/** Pushes preference values into the DOM (theme class, test font, cosmetics). */
 function applyToDocument(prefs: UserPreferences) {
   const root = document.documentElement
   root.dataset.theme = prefs.theme
   root.classList.toggle('dark', THEMES[prefs.theme].dark)
   root.style.setProperty('--font-test', FONTS[prefs.font].stack)
+  // Equipped cosmetics drive caret + keyboard-skin styling purely through CSS
+  // (data attributes), so the typing components stay preferences-free.
+  root.dataset.caret = prefs.equippedCosmetics.caret
+  root.dataset.kbSkin = prefs.equippedCosmetics.keyboardSkin
+  // UI language (§23).
+  root.lang = prefs.language
+  if (i18n.language !== prefs.language) void i18n.changeLanguage(prefs.language)
 }
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {

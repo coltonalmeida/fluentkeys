@@ -104,6 +104,34 @@
   --error: #d11d3b;
 }
 
+/* Midnight — deep indigo + violet (earnable cosmetic, dark-family) */
+[data-theme='midnight'] {
+  --bg: #0b1020;
+  --surface: #141a30;
+  --surface-2: #1b2440;
+  --border: #2a3354;
+  --fg: #e6e9f5;
+  --muted: #9aa3c0;
+  --faint: #5b6488;
+  --accent: #7c5cff;
+  --accent-contrast: #0b1020;
+  --error: #ff6b81;
+}
+
+/* Sunset — warm peach + magenta (earnable cosmetic, light-family) */
+[data-theme='sunset'] {
+  --bg: #fff5ec;
+  --surface: #ffe7d3;
+  --surface-2: #ffd9bf;
+  --border: #f3c9a8;
+  --fg: #3a2417;
+  --muted: #8a6a52;
+  --faint: #c0a487;
+  --accent: #ff5b6e;
+  --accent-contrast: #fff5ec;
+  --error: #d11d3b;
+}
+
 body {
   font-family: var(--font-sans);
   background: var(--color-bg);
@@ -185,4 +213,38 @@ body {
   to {
     height: 0;
   }
+}
+
+/* Caret cosmetics (§15). The default ('caret-line') keeps the thin Tailwind
+   styling on .fk-caret; these data-attr rules override it for earned variants.
+   Sizes use em so the caret tracks the test font size. Never animated by a JS
+   library — caret motion stays a plain CSS transform (see CLAUDE.md). */
+[data-caret='caret-block'] .fk-caret {
+  width: 0.62em;
+  background: color-mix(in srgb, var(--color-accent) 38%, transparent);
+}
+[data-caret='caret-underline'] .fk-caret {
+  width: 0.62em;
+  background: transparent;
+  border-bottom: 0.16em solid var(--color-accent);
+}
+[data-caret='caret-rainbow'] .fk-caret {
+  width: 0.62em;
+  background: linear-gradient(90deg, #ff5b6e, #e8a33d, #34d399, #7c5cff);
+  background-size: 300% 100%;
+  animation: caret-rainbow 2.5s linear infinite;
+}
+@keyframes caret-rainbow {
+  to {
+    background-position: 300% 0;
+  }
+}
+
+/* Keyboard-skin cosmetics (§15): a CSS filter over the whole board. The default
+   ('kb-default') applies no filter. */
+[data-kb-skin='kb-neon'] .fk-keyboard {
+  filter: saturate(1.85) brightness(1.08);
+}
+[data-kb-skin='kb-mono'] .fk-keyboard {
+  filter: grayscale(1) contrast(1.05);
 }

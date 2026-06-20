@@ -5,11 +5,13 @@ import { pool } from './db.js'
 
 const KEY_SETS = ['home', 'home-top', 'all'] as const
 const DIFFICULTIES = ['easy', 'medium', 'hard'] as const
-const WINDOWS = ['all', 'day', 'week'] as const
+// 'season' = the current calendar month; an explicit ?season=YYYY-MM views an archive.
+const WINDOWS = ['all', 'day', 'week', 'season'] as const
 const SCOPES = ['global', 'friends'] as const
 type Window = (typeof WINDOWS)[number]
 
-const TOP_N = 50
+const TOP_N = 10
+const SEASON_RE = /^\d{4}-\d{2}$/
 
 const wrap =
   (fn: (req: Request, res: Response) => Promise<void>) =>
@@ -20,9 +22,22 @@ const WINDOW_SQL: Record<Window, string> = {
   all: '',
   day: `AND l.created_at > now() - interval '1 day'`,
   week: `AND l.created_at > now() - interval '7 days'`,
+  // Current UTC month; an explicit ?season filter overrides this below.
+  season: `AND l.season_id = to_char((now() AT TIME ZONE 'UTC'), 'YYYY-MM')`,
 }
 
 export const leaderboardRouter = Router()
+
+// Distinct seasons present, newest first — drives the archive picker.
+leaderboardRouter.get(
+  '/seasons',
+  wrap(async (_req, res) => {
+    const { rows } = await pool.query<{ season_id: string }>(
+      `SELECT DISTINCT season_id FROM leaderboard_entries ORDER BY season_id DESC`,
+    )
+    res.json({ seasons: rows.map((r) => r.season_id) })
+  }),
+)
 
 // Public — no auth required to view the leaderboard.
 leaderboardRouter.get(
@@ -42,9 +57,20 @@ leaderboardRouter.get(
       return
     }
 
+    // An explicit, valid ?season=YYYY-MM views that archived month and overrides
+    // the window's time filter; otherwise the window (incl. 'season' = this month)
+    // applies as usual.
+    const seasonParam = typeof req.query.season === 'string' ? req.query.season : ''
+    const seasonArchive = SEASON_RE.test(seasonParam) ? seasonParam : null
+
     // Friends scope is signed-in only: restrict to the user's followees + self.
     let scopeSql = ''
     const params: (string | number)[] = [keySet, difficulty]
+    let timeSql = WINDOW_SQL[window]
+    if (seasonArchive) {
+      params.push(seasonArchive)
+      timeSql = `AND l.season_id = $${params.length}`
+    }
     if (scope === 'friends') {
       const { userId: clerkId } = getAuth(req)
       if (!clerkId) {
@@ -66,7 +92,7 @@ leaderboardRouter.get(
                 u.username, l.wpm, l.accuracy, l.created_at
          FROM leaderboard_entries l
          JOIN users u ON u.id = l.user_id
-         WHERE l.key_set = $1 AND l.difficulty = $2 ${WINDOW_SQL[window]} ${scopeSql}
+         WHERE l.key_set = $1 AND l.difficulty = $2 ${timeSql} ${scopeSql}
          ORDER BY l.user_id, l.wpm DESC, l.created_at DESC
        ) best
        ORDER BY wpm DESC, created_at ASC

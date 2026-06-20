@@ -10,10 +10,18 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { achievementsRouter } from "./achievements.js";
 import { authRouter } from "./auth.js";
+import { dailyRouter } from "./daily.js";
+import { duelsRouter } from "./duels.js";
 import { followsRouter } from "./follows.js";
+import { jobsRouter } from "./jobs.js";
 import { leaderboardRouter } from "./leaderboard.js";
+import { profilesRouter } from "./profiles.js";
+import { progressionRouter } from "./progression.js";
+import { referralsRouter } from "./referrals.js";
 import { resultsRouter } from "./results.js";
+import { shareRouter } from "./share.js";
 import { statsRouter } from "./stats.js";
+import { tracesRouter } from "./traces.js";
 import { trainingRouter } from "./training.js";
 import { webhooksRouter } from "./webhooks.js";
 
@@ -70,12 +78,28 @@ app.get("/health", (_req, res) => {
 
 app.use("/", webhooksRouter);
 app.use("/auth", authRouter);
-app.use("/", leaderboardRouter);
+
+// Public + mixed routers FIRST. Several routers below apply requireSignedIn
+// router-wide; because they're all mounted at "/", that middleware runs for
+// every request passing through them and would 401 any public route mounted
+// later. So all routers with public reads must precede the auth-gated ones.
+// (Mixed routers guard their writes per-route, so their public GETs stay open.)
+app.use("/", leaderboardRouter); // GET /leaderboard, /seasons
+app.use("/", shareRouter); // GET /results/:id, /r/:id, /r/:id/card.png
+app.use("/", tracesRouter); // GET /results/:id/trace (public) + POST (guarded)
+app.use("/", profilesRouter); // GET /users/:username/profile
+app.use("/", dailyRouter); // GET /daily, /daily/leaderboard (+ guarded POST)
+app.use("/", duelsRouter); // GET /duels/:code (+ guarded POST)
+app.use("/", jobsRouter); // /jobs/run (own secret guard), /email/unsubscribe
+
+// Auth-gated routers (each applies requireSignedIn router-wide).
 app.use("/", resultsRouter);
 app.use("/", statsRouter);
 app.use("/", trainingRouter);
 app.use("/", achievementsRouter);
 app.use("/", followsRouter);
+app.use("/", progressionRouter);
+app.use("/", referralsRouter);
 
 // Catch-all error handler: log the real error server-side, return a generic
 // message so stack traces / DB errors never reach the client. Honors an

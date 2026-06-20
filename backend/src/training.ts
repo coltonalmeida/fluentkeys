@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit'
 import { evaluateAchievements } from './achievements.js'
 import { requireSignedIn, upsertUser } from './auth.js'
 import { pool } from './db.js'
+import { awardXp, syncRewards, xpForTrainingSession } from './progression.js'
 
 // Mirrors the frontend's unlock model (home row → frequency). The starter index
 // is the home row (9 letters); the full progression is 26 letters.
@@ -198,9 +199,88 @@ trainingRouter.post(
         ],
       )
 
+      // XP first so level-based achievements see the new level this same call.
+      const xp = await awardXp(client, user.id, xpForTrainingSession(parsed.session.wordsTyped))
       const newlyEarned = await evaluateAchievements(client, user.id)
+      await syncRewards(client, user.id)
       await client.query('COMMIT')
-      res.status(201).json({ ok: true, newlyEarned })
+      res.status(201).json({ ok: true, newlyEarned, xp: xp.xp, level: xp.level, leveledUp: xp.leveledUp })
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    } finally {
+      client.release()
+    }
+  }),
+)
+
+// Migrate anonymous (guest) trainer progress into the account on first sign-in
+// (§19). Upserts the unlock index + per-letter windows only — no session row, no
+// XP/achievements — so importing guest progress never pollutes stats or grants
+// rewards the user didn't earn signed in. Per letter, the larger sample window
+// wins, so an established account isn't overwritten by a thinner guest window.
+trainingRouter.post(
+  '/training/import',
+  sessionLimiter,
+  wrap(async (req, res) => {
+    const b = req.body as Partial<SessionBody>
+    if (
+      typeof b.unlockedCount !== 'number' ||
+      b.unlockedCount < STARTER_INDEX ||
+      b.unlockedCount > MAX_INDEX
+    ) {
+      res.status(400).json({ error: 'Invalid unlockedCount' })
+      return
+    }
+    if (!Array.isArray(b.letters) || b.letters.length > 30) {
+      res.status(400).json({ error: 'Invalid letters' })
+      return
+    }
+    const letters: LetterPayload[] = []
+    for (const raw of b.letters) {
+      const l = raw as Partial<LetterPayload>
+      if (typeof l.letter !== 'string' || !LETTER_RE.test(l.letter)) {
+        res.status(400).json({ error: 'Invalid letter' })
+        return
+      }
+      const strength = typeof l.strength === 'number' ? Math.min(100, Math.max(0, l.strength)) : 0
+      letters.push({ letter: l.letter, strength, samples: sanitizeSamples(l.samples) })
+    }
+
+    const { userId: clerkId } = getAuth(req)
+    const user = await upsertUser(clerkId!)
+
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query(
+        `INSERT INTO training_profiles (user_id, unlocked_up_to_index, updated_at)
+         VALUES ($1, $2, now())
+         ON CONFLICT (user_id)
+         DO UPDATE SET
+           unlocked_up_to_index = GREATEST(
+             training_profiles.unlocked_up_to_index, EXCLUDED.unlocked_up_to_index),
+           updated_at = now()`,
+        [user.id, Math.floor(b.unlockedCount)],
+      )
+      for (const l of letters) {
+        await client.query(
+          `INSERT INTO letter_strengths
+             (user_id, letter, strength_score, sample_count, last_practiced_at, recent_samples)
+           VALUES ($1, $2, $3, $4, now(), $5)
+           ON CONFLICT (user_id, letter)
+           DO UPDATE SET
+             strength_score = CASE WHEN EXCLUDED.sample_count > letter_strengths.sample_count
+                                   THEN EXCLUDED.strength_score ELSE letter_strengths.strength_score END,
+             sample_count = GREATEST(letter_strengths.sample_count, EXCLUDED.sample_count),
+             recent_samples = CASE WHEN EXCLUDED.sample_count > letter_strengths.sample_count
+                                   THEN EXCLUDED.recent_samples ELSE letter_strengths.recent_samples END,
+             last_practiced_at = now()`,
+          [user.id, l.letter, l.strength, l.samples.length, JSON.stringify(l.samples)],
+        )
+      }
+      await client.query('COMMIT')
+      res.status(200).json({ ok: true })
     } catch (err) {
       await client.query('ROLLBACK')
       throw err

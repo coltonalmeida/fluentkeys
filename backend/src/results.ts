@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit'
 import { evaluateAchievements } from './achievements.js'
 import { requireSignedIn, upsertUser } from './auth.js'
 import { pool } from './db.js'
+import { awardXp, syncRewards, xpForResult } from './progression.js'
 
 const KEY_SETS = new Set(['home', 'home-top', 'all'])
 const DIFFICULTIES = new Set(['easy', 'medium', 'hard'])
@@ -102,9 +103,19 @@ resultsRouter.post(
          VALUES ($1, $2, $3, $4, $5)`,
         [user.id, parsed.keySet, parsed.difficulty, parsed.wpm, parsed.accuracy],
       )
+      // XP first so level-based achievements see the new level this same call.
+      const xp = await awardXp(client, user.id, xpForResult(parsed.wpm, parsed.duration))
       const newlyEarned = await evaluateAchievements(client, user.id)
+      await syncRewards(client, user.id)
       await client.query('COMMIT')
-      res.status(201).json({ resultId, isPersonalBest: pb.rowCount === 1, newlyEarned })
+      res.status(201).json({
+        resultId,
+        isPersonalBest: pb.rowCount === 1,
+        newlyEarned,
+        xp: xp.xp,
+        level: xp.level,
+        leveledUp: xp.leveledUp,
+      })
     } catch (err) {
       await client.query('ROLLBACK')
       throw err

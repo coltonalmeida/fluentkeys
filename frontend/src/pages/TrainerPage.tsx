@@ -56,9 +56,13 @@ export function TrainerPage() {
   // the bound keys only fire when meaningful: begin only from idle after the
   // intro, stop only while running (stopping from idle would pop an empty
   // summary). An undefined handler lets the key fall through to normal typing.
+  // Tab restarts the run WITHOUT saving it — an abandoned session never counts
+  // (practiceAgain resets to idle; only stop() persists a session). Gated by the
+  // intro like startPractice.
   useHotkeys({
     startPractice: introDone && trainer.status === 'idle' ? trainer.begin : undefined,
     stopPractice: trainer.status === 'running' ? trainer.stop : undefined,
+    restart: introDone ? trainer.practiceAgain : undefined,
   })
 
   const handleKey = (key: string) => {
@@ -109,6 +113,13 @@ export function TrainerPage() {
               <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-fg">
                 {formatCombo(prefs.hotkeys.stopPractice)}
               </kbd>
+            </span>
+            <span>
+              ·{' '}
+              <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-fg">
+                {formatCombo(prefs.hotkeys.restart)}
+              </kbd>{' '}
+              to restart
             </span>
           </div>
         )}

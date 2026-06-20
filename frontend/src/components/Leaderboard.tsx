@@ -1,10 +1,12 @@
 import { useAuth, useUser } from '@clerk/clerk-react'
 import { motion } from 'framer-motion'
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   follow,
   getFollows,
   getLeaderboard,
+  getSeasons,
   searchUsers,
   unfollow,
   type LeaderboardEntry,
@@ -16,8 +18,16 @@ import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from '../lib/w
 
 const WINDOW_LABELS: Record<LeaderboardWindow, string> = {
   all: 'All time',
+  season: 'This season',
   week: 'This week',
   day: 'Today',
+}
+
+/** 'YYYY-MM' → 'June 2026'. */
+function seasonLabel(id: string): string {
+  const [y, m] = id.split('-').map(Number)
+  if (!y || !m) return id
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 }
 
 // Framer Motion is allowed here — leaderboard and results screen only.
@@ -42,6 +52,10 @@ export function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null)
   const [error, setError] = useState(false)
 
+  // Season archives (§12). null = current season; otherwise a 'YYYY-MM' archive.
+  const [seasons, setSeasons] = useState<string[]>([])
+  const [selectedSeason, setSelectedSeason] = useState<string | null>(null)
+
   // Rivals (followees) — drives the Friends scope + list highlighting.
   const [follows, setFollows] = useState<UserSummary[]>([])
   const [query, setQuery] = useState('')
@@ -63,19 +77,27 @@ export function Leaderboard() {
     refreshFollows()
   }, [refreshFollows])
 
+  // Load the list of seasons once (for the archive picker).
+  useEffect(() => {
+    getSeasons()
+      .then((r) => setSeasons(r.seasons))
+      .catch(() => {})
+  }, [])
+
   useEffect(() => {
     if (friendsGated) return // signed-out + friends: render the gate, don't fetch
     let cancelled = false
     setEntries(null)
     setError(false)
+    const season = window === 'season' && selectedSeason ? selectedSeason : undefined
     getToken()
-      .then((token) => getLeaderboard(token, keySet, difficulty, window, scope))
+      .then((token) => getLeaderboard(token, keySet, difficulty, window, scope, season))
       .then(({ entries }) => !cancelled && setEntries(entries))
       .catch(() => !cancelled && setError(true))
     return () => {
       cancelled = true
     }
-  }, [keySet, difficulty, window, scope, friendsGated, getToken])
+  }, [keySet, difficulty, window, scope, selectedSeason, friendsGated, getToken])
 
   const runSearch = (q: string) => {
     setQuery(q)
@@ -145,6 +167,21 @@ export function Leaderboard() {
               <option key={id} value={id}>{label}</option>
             ))}
           </select>
+          {/* Season archive picker — only when viewing seasons. */}
+          {window === 'season' && seasons.length > 0 && (
+            <select
+              value={selectedSeason ?? ''}
+              onChange={(e) => setSelectedSeason(e.target.value || null)}
+              className={selectClass}
+            >
+              <option value="">This season</option>
+              {seasons.map((s) => (
+                <option key={s} value={s}>
+                  {seasonLabel(s)}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -229,7 +266,13 @@ export function Leaderboard() {
                   {i + 1}
                 </span>
                 <span className={`flex-1 truncate ${isMe ? 'font-semibold text-accent' : 'text-fg'}`}>
-                  {e.username ?? 'anonymous'}
+                  {e.username ? (
+                    <Link to={`/u/${encodeURIComponent(e.username)}`} className="hover:underline">
+                      {e.username}
+                    </Link>
+                  ) : (
+                    'anonymous'
+                  )}
                   {isRival && <span className="ml-2 text-xs text-muted">rival</span>}
                 </span>
                 <span className="font-mono text-lg font-bold text-fg">

@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { Trace, TraceEvent } from '../lib/api'
 import { buildCodeTarget } from '../lib/codeSnippets'
 import type { CodeLanguage } from '../lib/preferences'
 import { buildQuoteTarget } from '../lib/quotes'
+import { mulberry32 } from '../lib/rng'
 import { applyNumbers, applyPunctuation, generateWords } from '../lib/selectWords'
 import { computeStats, type TestStats, type WpmSample } from '../lib/stats'
 import type { Difficulty, KeySetId } from '../lib/words'
+
+/** Cap on recorded keystroke events (matches the backend bound). */
+const MAX_TRACE_EVENTS = 6000
 
 export type CharState = 'pending' | 'correct' | 'incorrect'
 export type TestStatus = 'idle' | 'running' | 'finished'
@@ -18,6 +23,11 @@ export interface TestSettings {
   mode: TestMode
   /** Language for code mode (sourced from user preferences). */
   codeLanguage: CodeLanguage
+  /** When set, words are generated deterministically from this seed and weak-key
+   *  bias is skipped, so every client gets identical text (daily challenge §9). */
+  seed?: number
+  /** When set, this exact text is used verbatim (duel challenger §3). */
+  fixedTarget?: string
 }
 
 interface BuiltTarget {
@@ -30,25 +40,33 @@ interface BuiltTarget {
 const wordCountFor = (duration: number) => Math.ceil((duration / 60) * 300)
 
 function buildTarget(settings: TestSettings, weakKeys: Record<string, number>): BuiltTarget {
+  // Duels supply the exact text to type, verbatim.
+  if (settings.fixedTarget != null) return { text: settings.fixedTarget, attribution: null }
+
   const count = wordCountFor(settings.duration)
+  // Seeded → deterministic content, identical for everyone (daily challenge). One
+  // rng instance feeds every generator so all modes are reproducible from the
+  // seed; we also drop the per-user weak-key bias so the stream is shared.
+  const rng = settings.seed != null ? mulberry32(settings.seed) : undefined
 
   if (settings.mode === 'quotes') {
-    const { text, authors } = buildQuoteTarget(count)
+    const { text, authors } = buildQuoteTarget(count, rng)
     return { text, attribution: authors.join(', ') }
   }
 
   if (settings.mode === 'code') {
-    return { text: buildCodeTarget(count, settings.codeLanguage).text, attribution: null }
+    return { text: buildCodeTarget(count, settings.codeLanguage, rng).text, attribution: null }
   }
 
   // Punctuation/numbers keep the weighted weak-key stream underneath.
   const words = generateWords(count, {
     keySet: settings.keySet,
     difficulty: settings.difficulty,
-    weakKeys,
+    weakKeys: rng ? undefined : weakKeys,
+    rng,
   })
-  if (settings.mode === 'punctuation') return { text: applyPunctuation(words), attribution: null }
-  if (settings.mode === 'numbers') return { text: applyNumbers(words), attribution: null }
+  if (settings.mode === 'punctuation') return { text: applyPunctuation(words, rng), attribution: null }
+  if (settings.mode === 'numbers') return { text: applyNumbers(words, rng), attribution: null }
   return { text: words.join(' '), attribution: null }
 }
 
@@ -61,6 +79,11 @@ export function useTypingTest(
   const weakKeysRef = useRef<Record<string, number>>({})
   const keystrokesRef = useRef(0)
   const seededRef = useRef(false)
+
+  // Per-keystroke trace for replay / heatmap / duel ghost (§3/§27). Timestamps are
+  // ms from the first keystroke; '\b' marks a backspace.
+  const traceRef = useRef<TraceEvent[]>([])
+  const traceStartRef = useRef(0)
 
   // Per-second WPM timeline, captured live as the test runs (feeds WpmChart).
   const timelineRef = useRef<WpmSample[]>([])
@@ -88,6 +111,8 @@ export function useTypingTest(
 
   const restart = useCallback(() => {
     keystrokesRef.current = 0
+    traceRef.current = []
+    traceStartRef.current = 0
     timelineRef.current = []
     elapsedRef.current = 0
     correctRef.current = 0
@@ -114,8 +139,10 @@ export function useTypingTest(
   }, [restart])
 
   // Merge persisted weak keys once when they arrive; rebuild words if the
-  // test hasn't started so the bias applies immediately.
+  // test hasn't started so the bias applies immediately. Skipped for seeded
+  // (daily) tests, which must stay identical for every user.
   useEffect(() => {
+    if (settings.seed != null) return
     if (seededRef.current || !seedWeakKeys || Object.keys(seedWeakKeys).length === 0) return
     seededRef.current = true
     for (const [key, count] of Object.entries(seedWeakKeys)) {
@@ -132,10 +159,16 @@ export function useTypingTest(
   }, [seedWeakKeys, settings])
 
   const finish = useCallback(
-    (states: CharState[]) => {
+    (states: CharState[], completed = false) => {
       const correct = states.filter((s) => s === 'correct').length
       const incorrect = states.filter((s) => s === 'incorrect').length
-      setStats(computeStats(correct, incorrect, keystrokesRef.current, settings.duration))
+      // A completed run (typed the whole target — e.g. a duel passage) is measured
+      // over the real elapsed time; a timed run uses its fixed duration.
+      const elapsed =
+        completed && traceStartRef.current
+          ? Math.max(0.5, (performance.now() - traceStartRef.current) / 1000)
+          : settings.duration
+      setStats(computeStats(correct, incorrect, keystrokesRef.current, elapsed))
       setTimeline(timelineRef.current)
       setStatus('finished')
     },
@@ -188,6 +221,9 @@ export function useTypingTest(
         // Keep the cumulative timeline counters in sync with what's on screen.
         if (charStates[index - 1] === 'correct') correctRef.current -= 1
         typedRef.current -= 1
+        if (traceStartRef.current && traceRef.current.length < MAX_TRACE_EVENTS) {
+          traceRef.current.push({ t: Math.round(performance.now() - traceStartRef.current), ch: '\b', ok: true })
+        }
         setIndex(index - 1)
         setCharStates((prev) => prev.slice(0, index - 1))
         return
@@ -196,12 +232,18 @@ export function useTypingTest(
       // Enter types a newline (code mode); otherwise only printable single chars.
       const ch = key === 'Enter' ? '\n' : key
       if (ch.length !== 1) return
-      if (status === 'idle') setStatus('running')
+      if (status === 'idle') {
+        setStatus('running')
+        traceStartRef.current = performance.now()
+      }
 
       keystrokesRef.current += 1
       typedRef.current += 1
       const expected = target[index]
       const correct = ch === expected
+      if (traceRef.current.length < MAX_TRACE_EVENTS) {
+        traceRef.current.push({ t: Math.round(performance.now() - traceStartRef.current), ch, ok: correct })
+      }
       if (correct) {
         correctRef.current += 1
         liveCorrectRef.current += 1
@@ -218,7 +260,7 @@ export function useTypingTest(
       setCharStates(next)
       setIndex(index + 1)
 
-      if (index + 1 >= target.length) finish(next)
+      if (index + 1 >= target.length) finish(next, true)
     },
     [status, index, target, charStates, finish],
   )
@@ -238,5 +280,11 @@ export function useTypingTest(
     restart,
     /** Per-key miss counts for this session (feeds char_counts / Phase 7). */
     missCounts: weakKeysRef.current,
+    /** Captured keystroke trace for replay / duels (read after finish). */
+    getTrace: (): Trace => ({
+      target,
+      durationSeconds: settings.duration,
+      events: traceRef.current,
+    }),
   }
 }

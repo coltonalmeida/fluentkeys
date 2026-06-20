@@ -1,27 +1,38 @@
 import { useAuth } from '@clerk/clerk-react'
 import { useEffect, useState } from 'react'
 import { ACHIEVEMENTS } from '../lib/achievements'
-import { getAchievements } from '../lib/api'
+import { getAchievements, type EarnedAchievement } from '../lib/api'
+
+interface AchievementsGridProps {
+  /** When provided (e.g. a public profile), render these instead of fetching the
+   *  signed-in user's achievements. */
+  earned?: EarnedAchievement[]
+}
 
 /** Profile grid of all achievements: earned ones lit + dated, locked ones dimmed. */
-export function AchievementsGrid() {
+export function AchievementsGrid({ earned: earnedProp }: AchievementsGridProps = {}) {
   const { getToken } = useAuth()
-  const [earned, setEarned] = useState<Map<string, string>>(new Map())
+  const [fetched, setFetched] = useState<Map<string, string>>(new Map())
 
   useEffect(() => {
+    if (earnedProp) return // caller supplied the data; don't fetch
     let cancelled = false
     getToken().then((token) =>
       getAchievements(token)
         .then((r) => {
           if (cancelled) return
-          setEarned(new Map(r.earned.map((e) => [e.key, e.earnedAt])))
+          setFetched(new Map(r.earned.map((e) => [e.key, e.earnedAt])))
         })
         .catch(() => {}),
     )
     return () => {
       cancelled = true
     }
-  }, [getToken])
+  }, [getToken, earnedProp])
+
+  const earned = earnedProp
+    ? new Map(earnedProp.map((e) => [e.key, e.earnedAt]))
+    : fetched
 
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">

@@ -4,11 +4,13 @@
     "loading": "Cargando…",
     "save": "Guardar",
     "reset": "Restablecer valores",
-    "saved": "Guardado"
+    "saved": "Guardado",
+    "resetDone": "Ajustes restablecidos a los valores predeterminados"
   },
   "nav": {
     "practice": "Práctica",
     "timedTest": "Prueba cronometrada",
+    "daily": "Reto diario",
     "settings": "Ajustes",
     "profile": "Perfil",
     "leaderboard": "Clasificación",
@@ -47,7 +49,22 @@
     "codeLanguageHint": "Usado por el modo de escritura Código.",
     "resetSection": "Restablecer esta sección",
     "accountGuest": "No has iniciado sesión. Las preferencias se guardan en este dispositivo.",
-    "accountSynced": "Sesión iniciada: las preferencias se sincronizan con tu perfil."
+    "accountSynced": "Sesión iniciada: las preferencias se sincronizan con tu perfil.",
+    "username": "Nombre de usuario",
+    "usernameHint": "Se muestra en la clasificación y a los rivales.",
+    "usernamePlaceholder": "tu_usuario",
+    "usernameSave": "Guardar",
+    "usernameSaving": "Guardando…",
+    "usernameSaved": "Guardado",
+    "usernameTaken": "Ese nombre de usuario ya está en uso",
+    "usernameInvalid": "Ese nombre de usuario no está permitido: prueba otro.",
+    "usernameLocked": "Podrás cambiar tu nombre de usuario de nuevo el {{date}}."
+  },
+  "usernameGate": {
+    "title": "Elige un nombre de usuario",
+    "body": "Elige un nombre de usuario para continuar: se muestra en la clasificación y a los rivales. Puedes cambiarlo más adelante (una vez por semana).",
+    "cta": "Establecer nombre de usuario",
+    "saving": "Guardando…"
   },
   "profile": {
     "title": "Perfil",

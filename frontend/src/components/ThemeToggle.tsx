@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Moon, Sun } from 'lucide-react'
 import { THEMES, type Theme } from '../lib/preferences'
+import { Tooltip } from './ui/Tooltip'
 
 interface ThemeToggleProps {
   theme: Theme
@@ -11,11 +12,12 @@ interface ThemeToggleProps {
  *  Coffee) and a Sun for light-family ones; clicking flips to the paired theme. */
 export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
   const isDark = THEMES[theme].dark
+  const label = isDark ? 'Switch to light mode' : 'Switch to dark mode'
   return (
-    <div className="rounded-full bg-surface-2 p-1">
+    <Tooltip label={label} side="bottom" className="rounded-full bg-surface-2 p-1">
       <motion.button
         type="button"
-        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label={label}
         onClick={onToggle}
         whileTap={{ scale: 0.92 }}
         className="relative z-0 flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-surface text-fg transition-colors duration-300 before:absolute before:inset-0 before:-z-10 before:translate-x-[150%] before:translate-y-[150%] before:scale-[2.5] before:rounded-[100%] before:bg-fg before:transition-transform before:duration-500 before:content-[''] hover:text-bg hover:before:translate-x-[0%] hover:before:translate-y-[0%]"
@@ -34,6 +36,6 @@ export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
           {isDark ? <Moon size={15} /> : <Sun size={15} />}
         </motion.span>
       </motion.button>
-    </div>
+    </Tooltip>
   )
 }

@@ -8,10 +8,14 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "migrate": "node-pg-migrate -m migrations --envPath ../.env",
-    "migrate:prod": "node-pg-migrate -m migrations up"
+    "migrate:prod": "node-pg-migrate -m migrations up",
+    "job:digest": "tsx src/jobcli.ts digest",
+    "job:streak": "tsx src/jobcli.ts streak",
+    "job:rivals": "tsx src/jobcli.ts rivals"
   },
   "dependencies": {
     "@clerk/express": "^2.1.26",
+    "@resvg/resvg-js": "^2.6.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",

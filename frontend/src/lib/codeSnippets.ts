@@ -62,7 +62,11 @@ const wordCount = (s: string) => s.trim().split(/\s+/).length
  * by a blank line) until at least `targetWords` words are reached, allowing reuse
  * if the pool empties first. Mirrors buildQuoteTarget in lib/quotes.ts.
  */
-export function buildCodeTarget(targetWords: number, lang: CodeLanguage): { text: string } {
+export function buildCodeTarget(
+  targetWords: number,
+  lang: CodeLanguage,
+  rng: () => number = Math.random,
+): { text: string } {
   const snippets = CODE_SNIPPETS[lang]
 
   if (targetWords <= 25) {
@@ -82,7 +86,7 @@ export function buildCodeTarget(targetWords: number, lang: CodeLanguage): { text
   let words = 0
   const pool = [...snippets]
   while (words < targetWords && pool.length > 0) {
-    const idx = Math.floor(Math.random() * pool.length)
+    const idx = Math.floor(rng() * pool.length)
     const s = pool.splice(idx, 1)[0]!
     parts.push(s.text)
     words += wordCount(s.text)

@@ -86,8 +86,9 @@ export function KeyboardVisual({
           keyboard off the center it held during the unboxing animation. */}
       <div className="relative">
         <div
-          className="flex flex-col gap-1.5 rounded-xl bg-surface-2 p-3 shadow-lg"
-          style={{ ['--u' as string]: '3rem' }}
+          // The key unit (--u) scales down on small screens so the full board
+          // fits without horizontal scrolling (§22 mobile).
+          className="fk-keyboard flex flex-col gap-1.5 rounded-xl bg-surface-2 p-3 shadow-lg [--u:1.7rem] sm:[--u:2.3rem] md:[--u:3rem]"
         >
           {layout.rows.map((row, i) => (
             <div key={i} className="flex gap-1.5">

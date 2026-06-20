@@ -37,8 +37,8 @@
         var legacyTheme = localStorage.getItem('fluentkeys-theme')
         var theme = prefs.theme || (legacyTheme === 'light' ? 'light' : 'dark')
         // Keep in sync with THEMES in src/lib/preferences.ts.
-        var darkFamily = { dark: 1, coffee: 1 }
-        var validThemes = { light: 1, dark: 1, coffee: 1, cream: 1 }
+        var darkFamily = { dark: 1, coffee: 1, midnight: 1 }
+        var validThemes = { light: 1, dark: 1, coffee: 1, cream: 1, midnight: 1, sunset: 1 }
         if (!validThemes[theme]) theme = 'dark'
         document.documentElement.dataset.theme = theme
         if (darkFamily[theme]) document.documentElement.classList.add('dark')

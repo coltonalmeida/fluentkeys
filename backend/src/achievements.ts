@@ -16,11 +16,27 @@ const wrap =
  * needs the keys + the rules. See FEATURE-ROADMAP #5.
  */
 export const ACHIEVEMENT_KEYS = [
+  // WPM ladder
+  'first_50_wpm',
+  'first_80_wpm',
   'first_100_wpm',
+  'first_120_wpm',
+  // Streak ladder
   'seven_day_streak',
+  'thirty_day_streak',
+  'hundred_day_streak',
+  // Trainer progression
   'all_letters',
+  // Words-typed ladder
+  'thousand_words',
   'ten_thousand_words',
+  'fifty_thousand_words',
+  // Accuracy
   'flawless',
+  // Level milestones
+  'level_5',
+  'level_10',
+  'level_25',
 ] as const
 
 interface Metrics {
@@ -29,6 +45,7 @@ interface Metrics {
   unlocked: number
   flawless: boolean
   longest_streak: number
+  level: number
 }
 
 /**
@@ -59,17 +76,34 @@ export async function evaluateAchievements(
          SELECT 1 FROM results r JOIN test_sessions s ON s.id = r.session_id
          WHERE r.user_id = $1 AND r.accuracy >= 100 AND s.duration >= 30
        ) AS flawless,
-       COALESCE((SELECT MAX(cnt) FROM (SELECT COUNT(*) AS cnt FROM grp GROUP BY g) z), 0)::int AS longest_streak`,
+       COALESCE((SELECT MAX(cnt) FROM (SELECT COUNT(*) AS cnt FROM grp GROUP BY g) z), 0)::int AS longest_streak,
+       COALESCE((SELECT level FROM user_progression WHERE user_id = $1), 1)::int AS level`,
     [userId],
   )
   const m = rows[0]!
 
   const earned: string[] = []
+  // WPM ladder (each tier earned independently once reached).
+  if (m.max_wpm >= 50) earned.push('first_50_wpm')
+  if (m.max_wpm >= 80) earned.push('first_80_wpm')
   if (m.max_wpm >= 100) earned.push('first_100_wpm')
+  if (m.max_wpm >= 120) earned.push('first_120_wpm')
+  // Streak ladder
   if (m.longest_streak >= 7) earned.push('seven_day_streak')
+  if (m.longest_streak >= 30) earned.push('thirty_day_streak')
+  if (m.longest_streak >= 100) earned.push('hundred_day_streak')
+  // Trainer progression
   if (m.unlocked >= 26) earned.push('all_letters')
+  // Words-typed ladder
+  if (m.total_words >= 1000) earned.push('thousand_words')
   if (m.total_words >= 10000) earned.push('ten_thousand_words')
+  if (m.total_words >= 50000) earned.push('fifty_thousand_words')
+  // Accuracy
   if (m.flawless) earned.push('flawless')
+  // Level milestones
+  if (m.level >= 5) earned.push('level_5')
+  if (m.level >= 10) earned.push('level_10')
+  if (m.level >= 25) earned.push('level_25')
 
   if (earned.length === 0) return []
 

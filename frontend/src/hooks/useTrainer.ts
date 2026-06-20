@@ -1,6 +1,6 @@
 import { useAuth } from '@clerk/clerk-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getTrainingState, postTrainingSession } from '../lib/api'
+import { getTrainingState, getWeakKeys, postTrainingImport, postTrainingSession } from '../lib/api'
 import { clamp, strengthMapFrom } from '../lib/letterStrength'
 import { loadLocalTraining, saveLocalTraining } from '../lib/trainingStore'
 import { newestLetter, UNLOCK_THRESHOLD, unlockedLetters } from '../lib/unlocks'
@@ -42,12 +42,23 @@ export function useTrainer() {
     signedInRef.current = isSignedIn === true
   }, [isSignedIn])
 
+  // Timed-test miss history feeds extra weak-key bias into generation (§25).
+  const [missCounts, setMissCounts] = useState<Record<string, number>>({})
+  useEffect(() => {
+    if (!isSignedIn) return
+    getToken()
+      .then((token) => getWeakKeys(token))
+      .then((r) => setMissCounts(r.weakKeys))
+      .catch(() => {})
+  }, [isSignedIn, getToken])
+
   const newest = newestLetter(letter.unlockedCount)
   const content = useContentGenerator({
     unlocked: letter.unlocked,
     strength: letter.strengthMap,
     newestLetter: newest,
     boostNewest: newest != null && (letter.strengthMap[newest] ?? 0) < UNLOCK_THRESHOLD,
+    missCounts,
   })
   const { advanceLine, refreshNext } = content
 
@@ -260,8 +271,11 @@ export function useTrainer() {
     charShownAtRef.current = Date.now()
   }, [advanceLine, setIndexBoth])
 
-  // On sign-in, adopt the cloud profile (cross-device continuity) — but never
-  // clobber a session already in progress. Anonymous users stay on localStorage.
+  // On sign-in, reconcile guest progress with the cloud profile (§19). If the
+  // local (guest) state is further along than the account's — more letters
+  // unlocked or more recorded samples — migrate it up and keep it, so signing up
+  // never discards a guest's practice. Otherwise adopt the cloud profile
+  // (cross-device continuity). Never clobber a session already in progress.
   useEffect(() => {
     if (!isSignedIn) {
       hydratedRemote.current = false
@@ -269,15 +283,33 @@ export function useTrainer() {
     }
     if (hydratedRemote.current) return
     hydratedRemote.current = true
+    const sampleCount = (w: Record<string, unknown[]>) =>
+      Object.values(w).reduce((n, arr) => n + (arr?.length ?? 0), 0)
     getToken()
-      .then((token) => getTrainingState(token))
-      .then((state) => {
+      .then(async (token) => {
+        const state = await getTrainingState(token)
         if (statusRef.current !== 'idle') return
-        hydrate({ unlockedCount: state.unlockedCount, windows: state.windows })
-        saveLocalTraining({ unlockedCount: state.unlockedCount, windows: state.windows }, true)
+        const local = getSnapshot()
+        const localAhead =
+          local.unlockedCount > state.unlockedCount ||
+          sampleCount(local.windows as Record<string, unknown[]>) >
+            sampleCount(state.windows as Record<string, unknown[]>)
+        if (localAhead) {
+          const strength = strengthMapFrom(local.windows)
+          const letters = Object.entries(local.windows).map(([l, samples]) => ({
+            letter: l,
+            strength: Math.round(strength[l] ?? 0),
+            samples,
+          }))
+          await postTrainingImport(token, { unlockedCount: local.unlockedCount, letters })
+          saveLocalTraining(local, true)
+        } else {
+          hydrate({ unlockedCount: state.unlockedCount, windows: state.windows })
+          saveLocalTraining({ unlockedCount: state.unlockedCount, windows: state.windows }, true)
+        }
       })
-      .catch((err) => console.error('training state load failed:', err))
-  }, [isSignedIn, getToken, hydrate])
+      .catch((err) => console.error('training state sync failed:', err))
+  }, [isSignedIn, getToken, hydrate, getSnapshot])
 
   // Persist the finished session to the cloud (signed-in users).
   useEffect(() => {

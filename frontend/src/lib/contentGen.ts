@@ -29,7 +29,15 @@ export interface LineOptions {
   boostNewest?: boolean
   /** Precomputed eligible real words (perf); derived from `unlocked` if omitted. */
   eligible?: string[]
+  /** Phase 7 (§25): per-key miss counts from the user's timed-test history. Adds a
+   *  bounded boost so the trainer also targets keys missed in timed tests, not
+   *  just low-strength letters. */
+  missCounts?: Record<string, number>
 }
+
+/** Each recent miss adds this much weakness, capped so one noisy key can't dominate. */
+const MISS_WEIGHT = 4
+const MISS_CAP = 60
 
 /** Real words typeable with only the unlocked letters. */
 export function eligibleWords(unlocked: string[]): string[] {
@@ -40,14 +48,20 @@ export function eligibleWords(unlocked: string[]): string[] {
   })
 }
 
-function weaknessOf(letter: string, strength: Record<string, number>): number {
-  return 100 - (strength[letter] ?? 0)
+function weaknessOf(
+  letter: string,
+  strength: Record<string, number>,
+  missCounts?: Record<string, number>,
+): number {
+  const base = 100 - (strength[letter] ?? 0)
+  const miss = missCounts?.[letter] ?? 0
+  return base + Math.min(miss * MISS_WEIGHT, MISS_CAP)
 }
 
-/** sum(100 − strength) / length, with an optional 2× newest-letter boost (§4.2). */
+/** sum(weakness) / length, with an optional 2× newest-letter boost (§4.2). */
 function practiceValue(word: string, opts: LineOptions): number {
   let sum = 0
-  for (const ch of word) sum += weaknessOf(ch, opts.strength)
+  for (const ch of word) sum += weaknessOf(ch, opts.strength, opts.missCounts)
   let value = sum / word.length
   if (opts.boostNewest && opts.newestLetter && word.includes(opts.newestLetter)) {
     value *= 2

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import type { TrainerSummary } from '../hooks/useTrainer'
+import { SaveProgressCta } from './SaveProgressCta'
 
 interface SessionSummaryProps {
   summary: TrainerSummary
@@ -70,6 +71,10 @@ export function SessionSummary({ summary, onPracticeAgain }: SessionSummaryProps
         >
           Practice Again
         </button>
+
+        <div className="mt-4">
+          <SaveProgressCta />
+        </div>
       </motion.div>
     </motion.div>
   )

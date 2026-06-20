@@ -8,6 +8,7 @@ import './index.css'
 import App from './App.tsx'
 import { IntroProvider } from './hooks/useIntro'
 import { PreferencesProvider } from './hooks/usePreferences'
+import { ProgressionProvider } from './hooks/useProgression'
 import { loadPreferences, THEMES } from './lib/preferences'
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined
@@ -27,9 +28,11 @@ createRoot(document.getElementById('root')!).render(
     <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/" appearance={clerkAppearance}>
       <BrowserRouter>
         <PreferencesProvider>
-          <IntroProvider>
-            <App />
-          </IntroProvider>
+          <ProgressionProvider>
+            <IntroProvider>
+              <App />
+            </IntroProvider>
+          </ProgressionProvider>
         </PreferencesProvider>
       </BrowserRouter>
     </ClerkProvider>

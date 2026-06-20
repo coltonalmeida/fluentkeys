@@ -136,16 +136,43 @@ function dayBefore(iso: string): string {
   return d.toISOString().slice(0, 10)
 }
 
-/** Current (up to today) + longest run of consecutive active days. */
-function computeStreaks(days: string[], today: string): { current: number; longest: number } {
-  const set = new Set(days)
+/**
+ * Current (up to today) + longest run of consecutive active days, with streak
+ * freezes (§11). Already-frozen days count as active. When the current run hits
+ * an *isolated* missing day (the day before it is active) and a freeze token is
+ * available, the gap is bridged and the day is returned in `newlyFrozen` so the
+ * caller can persist the consumption. Two adjacent missing days are never
+ * bridged. With no freezes + no frozen days this matches plain streak counting.
+ */
+function computeStreaksWithFreezes(
+  days: string[],
+  today: string,
+  frozenDays: string[],
+  availableFreezes: number,
+): { current: number; longest: number; newlyFrozen: string[] } {
+  const set = new Set([...days, ...frozenDays])
 
   // Today not practiced yet shouldn't break a streak — start from yesterday then.
   let cursor = set.has(today) ? today : dayBefore(today)
   let current = 0
-  while (set.has(cursor)) {
-    current += 1
-    cursor = dayBefore(cursor)
+  let remaining = availableFreezes
+  const newlyFrozen: string[] = []
+  for (;;) {
+    if (set.has(cursor)) {
+      current += 1
+      cursor = dayBefore(cursor)
+      continue
+    }
+    // Isolated gap: bridge it with a freeze only if there's a prior active day.
+    if (remaining > 0 && set.has(dayBefore(cursor))) {
+      newlyFrozen.push(cursor)
+      set.add(cursor)
+      remaining -= 1
+      current += 1
+      cursor = dayBefore(cursor)
+      continue
+    }
+    break
   }
 
   let longest = 0
@@ -157,7 +184,7 @@ function computeStreaks(days: string[], today: string): { current: number; longe
     prev = d
   }
 
-  return { current, longest }
+  return { current, longest, newlyFrozen }
 }
 
 statsRouter.get(
@@ -167,7 +194,7 @@ statsRouter.get(
     const user = await upsertUser(clerkId!)
     const tz = safeTz(req.query.tz)
 
-    const [daysResult, todayResult] = await Promise.all([
+    const [daysResult, todayResult, progResult] = await Promise.all([
       pool.query<{ day: string }>(
         `WITH activity AS (
            SELECT r.created_at AS ts FROM results r WHERE r.user_id = $1
@@ -198,15 +225,43 @@ statsRouter.get(
          FROM activity`,
         [user.id, tz],
       ),
+      pool.query<{ streak_freezes: number; frozen_days: string[] }>(
+        `SELECT streak_freezes, frozen_days FROM user_progression WHERE user_id = $1`,
+        [user.id],
+      ),
     ])
 
     const today = todayResult.rows[0]!.today
-    const { current, longest } = computeStreaks(
+    const availableFreezes = progResult.rows[0]?.streak_freezes ?? 0
+    const frozenDays = Array.isArray(progResult.rows[0]?.frozen_days)
+      ? progResult.rows[0]!.frozen_days
+      : []
+    const { current, longest, newlyFrozen } = computeStreaksWithFreezes(
       daysResult.rows.map((r) => r.day),
       today,
+      frozenDays,
+      availableFreezes,
     )
 
-    res.json({ current, longest, todaySeconds: todayResult.rows[0]!.today_secs })
+    // Persist any freeze tokens consumed to bridge gaps (idempotent: newlyFrozen
+    // days were missing, so they can't already be in frozen_days).
+    if (newlyFrozen.length > 0) {
+      await pool.query(
+        `UPDATE user_progression
+            SET streak_freezes = streak_freezes - $2,
+                frozen_days = frozen_days || $3::jsonb,
+                updated_at = now()
+          WHERE user_id = $1`,
+        [user.id, newlyFrozen.length, JSON.stringify(newlyFrozen)],
+      )
+    }
+
+    res.json({
+      current,
+      longest,
+      todaySeconds: todayResult.rows[0]!.today_secs,
+      streakFreezes: availableFreezes - newlyFrozen.length,
+    })
   }),
 )
 
@@ -239,6 +294,49 @@ statsRouter.get(
         bestWpm: Math.round(r.best_wpm),
       })),
     })
+  }),
+)
+
+// WPM by time of day (§26): average WPM + test count per tz-local hour.
+statsRouter.get(
+  '/stats/by-hour',
+  wrap(async (req, res) => {
+    const { userId: clerkId } = getAuth(req)
+    const user = await upsertUser(clerkId!)
+    const tz = safeTz(req.query.tz)
+    const { rows } = await pool.query<{ hour: number; avg_wpm: number; tests: number }>(
+      `SELECT EXTRACT(HOUR FROM (created_at AT TIME ZONE $2))::int AS hour,
+              AVG(wpm)::float8 AS avg_wpm,
+              COUNT(*)::int AS tests
+       FROM results WHERE user_id = $1
+       GROUP BY hour ORDER BY hour`,
+      [user.id, tz],
+    )
+    res.json({
+      byHour: rows.map((r) => ({ hour: r.hour, avgWpm: Math.round(r.avg_wpm), tests: r.tests })),
+    })
+  }),
+)
+
+// Consistency score (§26): how steady recent WPM is. 100 = identical every test,
+// lower = more variance. Derived from the coefficient of variation over the last
+// 50 timed tests.
+statsRouter.get(
+  '/stats/consistency',
+  wrap(async (req, res) => {
+    const { userId: clerkId } = getAuth(req)
+    const user = await upsertUser(clerkId!)
+    const { rows } = await pool.query<{ n: number; mean: number | null; sd: number | null }>(
+      `SELECT COUNT(*)::int AS n, AVG(wpm)::float8 AS mean, STDDEV_POP(wpm)::float8 AS sd
+       FROM (SELECT wpm FROM results WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50) z`,
+      [user.id],
+    )
+    const r = rows[0]!
+    const score =
+      r.mean && r.mean > 0 && r.sd != null
+        ? Math.max(0, Math.min(100, Math.round(100 * (1 - r.sd / r.mean))))
+        : null
+    res.json({ score, sampleSize: r.n, avgWpm: r.mean != null ? Math.round(r.mean) : null })
   }),
 )
 

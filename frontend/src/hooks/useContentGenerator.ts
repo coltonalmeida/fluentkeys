@@ -8,6 +8,8 @@ export interface ContentGeneratorParams {
   newestLetter: string | null
   /** Whether the newest letter still gets its 2× exposure boost. */
   boostNewest: boolean
+  /** Per-key miss counts from timed-test history (§25) — extra weak-key bias. */
+  missCounts?: Record<string, number>
 }
 
 export interface UseContentGenerator {
@@ -38,6 +40,7 @@ export function useContentGenerator(params: ContentGeneratorParams): UseContentG
     newestLetter: params.newestLetter,
     boostNewest: params.boostNewest,
     eligible,
+    missCounts: params.missCounts,
   }
 
   const optsRef = useRef(opts)

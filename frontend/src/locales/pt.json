@@ -4,11 +4,13 @@
     "loading": "A carregar…",
     "save": "Guardar",
     "reset": "Repor predefinições",
-    "saved": "Guardado"
+    "saved": "Guardado",
+    "resetDone": "Definições repostas para as predefinições"
   },
   "nav": {
     "practice": "Prática",
     "timedTest": "Teste cronometrado",
+    "daily": "Desafio diário",
     "settings": "Definições",
     "profile": "Perfil",
     "leaderboard": "Classificação",
@@ -47,7 +49,22 @@
     "codeLanguageHint": "Usado pelo modo de escrita Código.",
     "resetSection": "Repor esta secção",
     "accountGuest": "Sessão não iniciada. As preferências são guardadas neste dispositivo.",
-    "accountSynced": "Sessão iniciada — as preferências sincronizam com o seu perfil."
+    "accountSynced": "Sessão iniciada — as preferências sincronizam com o seu perfil.",
+    "username": "Nome de utilizador",
+    "usernameHint": "Mostrado na classificação e aos rivais.",
+    "usernamePlaceholder": "o_seu_utilizador",
+    "usernameSave": "Guardar",
+    "usernameSaving": "A guardar…",
+    "usernameSaved": "Guardado",
+    "usernameTaken": "Esse nome de utilizador já está em uso",
+    "usernameInvalid": "Esse nome de utilizador não é permitido — tente outro.",
+    "usernameLocked": "Pode alterar o seu nome de utilizador novamente a {{date}}."
+  },
+  "usernameGate": {
+    "title": "Escolha um nome de utilizador",
+    "body": "Escolha um nome de utilizador para continuar — é mostrado na classificação e aos rivais. Pode alterá-lo mais tarde (uma vez por semana).",
+    "cta": "Definir nome de utilizador",
+    "saving": "A guardar…"
   },
   "profile": {
     "title": "Perfil",

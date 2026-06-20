@@ -68,18 +68,23 @@ export interface PersonalBest {
   achieved_at: string
 }
 
-export const postResult = (token: string | null, payload: ResultPayload) =>
-  apiRequest<{ resultId: string; isPersonalBest: boolean; newlyEarned: string[] }>(
-    '/results',
-    token,
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    },
-  )
+export interface ResultResponse {
+  resultId: string
+  isPersonalBest: boolean
+  newlyEarned: string[]
+  xp: number
+  level: number
+  leveledUp: boolean
+}
 
-export const getHistory = (token: string | null) =>
-  apiRequest<{ results: HistoryEntry[] }>('/results', token)
+export const postResult = (token: string | null, payload: ResultPayload) =>
+  apiRequest<ResultResponse>('/results', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const getHistory = (token: string | null, limit = 20) =>
+  apiRequest<{ results: HistoryEntry[] }>(`/results?limit=${limit}`, token)
 
 export const getPersonalBests = (token: string | null) =>
   apiRequest<{ personalBests: PersonalBest[] }>('/personal-bests', token)
@@ -138,11 +143,39 @@ export interface TrainingSessionPayload {
 export const getTrainingState = (token: string | null) =>
   apiRequest<TrainingStateResponse>('/training/state', token)
 
-export const postTrainingSession = (token: string | null, payload: TrainingSessionPayload) =>
-  apiRequest<{ ok: boolean; newlyEarned: string[] }>('/training/session', token, {
+// Migrate guest (anonymous) trainer progress into the account on first sign-in
+// (§19). Upserts letter windows + unlock index only — no session/XP/achievements.
+export const postTrainingImport = (
+  token: string | null,
+  payload: { unlockedCount: number; letters: TrainingSessionPayload['letters'] },
+) =>
+  apiRequest<{ ok: boolean }>('/training/import', token, {
     method: 'POST',
     body: JSON.stringify(payload),
   })
+
+export const postTrainingSession = (token: string | null, payload: TrainingSessionPayload) =>
+  apiRequest<{ ok: boolean; newlyEarned: string[]; xp: number; level: number; leveledUp: boolean }>(
+    '/training/session',
+    token,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  )
+
+// Progression: XP/level + earned cosmetics + streak-freeze tokens (§15/§16/§11).
+export interface Progression {
+  xp: number
+  level: number
+  levelXp: number
+  nextLevelXp: number
+  streakFreezes: number
+  ownedCosmetics: string[]
+}
+
+export const getProgression = (token: string | null) =>
+  apiRequest<Progression>('/progression', token)
 
 export interface EarnedAchievement {
   key: string
@@ -188,6 +221,8 @@ export interface StreakResponse {
   longest: number
   /** Seconds practiced today (tz-local), compared against the client daily goal. */
   todaySeconds: number
+  /** Unused streak-freeze tokens (§11). */
+  streakFreezes: number
 }
 
 export const getStreak = (token: string | null, tz: string) =>
@@ -211,6 +246,158 @@ export const getActivity = (token: string | null, tz: string, year?: number) =>
     token,
   )
 
+// Deeper analytics (§26).
+export interface HourPoint {
+  hour: number
+  avgWpm: number
+  tests: number
+}
+
+export const getStatsByHour = (token: string | null, tz: string) =>
+  apiRequest<{ byHour: HourPoint[] }>(`/stats/by-hour?tz=${encodeURIComponent(tz)}`, token)
+
+export interface Consistency {
+  score: number | null
+  sampleSize: number
+  avgWpm: number | null
+}
+
+export const getConsistency = (token: string | null) =>
+  apiRequest<Consistency>('/stats/consistency', token)
+
+// Public, read-only profile (§2) — no auth needed. Mirrors the signed-in profile
+// but privacy-trimmed (no email / Clerk id).
+export interface PublicProfile {
+  id: string
+  username: string
+  joinedAt: string
+  level: number
+  topWpm: number
+  totalTests: number
+  badge: string | null
+  frame: string | null
+  pbs: PersonalBest[]
+  achievements: EarnedAchievement[]
+  activity: DayActivity[]
+}
+
+export const getPublicProfile = (username: string) =>
+  apiRequest<PublicProfile>(`/users/${encodeURIComponent(username)}/profile`, null)
+
+// Daily challenge (§9): one shared seeded test per UTC day + its own leaderboard.
+export interface DailyConfig {
+  date: string
+  seed: number
+  keySet: string
+  difficulty: string
+  duration: number
+  mode: string
+  codeLanguage: string
+  yourBest: { wpm: number; accuracy: number } | null
+}
+
+export interface DailyLeaderboardEntry {
+  username: string | null
+  wpm: string
+  accuracy: string
+  created_at: string
+}
+
+export const getDaily = (token: string | null) => apiRequest<DailyConfig>('/daily', token)
+
+export const getDailyLeaderboard = (date?: string) =>
+  apiRequest<{ date: string; entries: DailyLeaderboardEntry[] }>(
+    `/daily/leaderboard${date ? `?date=${encodeURIComponent(date)}` : ''}`,
+    null,
+  )
+
+export const postDailyResult = (
+  token: string | null,
+  payload: { wpm: number; accuracy: number; rawWpm: number },
+) =>
+  apiRequest<{ date: string; isBest: boolean }>('/daily/result', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+// Keystroke traces (§27) — replay + per-key heatmap; also the duel ghost (§3).
+export interface TraceEvent {
+  /** ms since the first keystroke */
+  t: number
+  /** typed character, or '\b' for backspace */
+  ch: string
+  /** matched the expected character */
+  ok: boolean
+}
+
+export interface Trace {
+  target: string
+  durationSeconds: number
+  events: TraceEvent[]
+}
+
+export const postTrace = (token: string | null, resultId: string, trace: Trace) =>
+  apiRequest<{ ok: boolean }>(`/results/${resultId}/trace`, token, {
+    method: 'POST',
+    body: JSON.stringify(trace),
+  })
+
+export const getTrace = (resultId: string) =>
+  apiRequest<{ trace: Trace }>(`/results/${resultId}/trace`, null)
+
+// Public shared result (§1) — privacy-trimmed single result by id.
+export interface SharedResult {
+  id: string
+  username: string | null
+  wpm: number
+  accuracy: number
+  rawWpm: number
+  keySet: string
+  difficulty: string
+  duration: number
+  createdAt: string
+}
+
+export const getSharedResult = (id: string) => apiRequest<SharedResult>(`/results/${id}`, null)
+
+// Duels (§3): create from a finished test, then anyone can race the ghost.
+export interface DuelData {
+  code: string
+  target: string
+  duration: number
+  creatorUsername: string | null
+  creatorWpm: number
+  creatorAccuracy: number
+  events: TraceEvent[]
+}
+
+export const createDuel = (
+  token: string | null,
+  payload: { target: string; durationSeconds: number; events: TraceEvent[]; wpm: number; accuracy: number },
+) =>
+  apiRequest<{ code: string }>('/duels', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const getDuel = (code: string) =>
+  apiRequest<DuelData>(`/duels/${encodeURIComponent(code)}`, null)
+
+// Referral / invite loop (§4).
+export interface ReferralInfo {
+  code: string
+  successfulReferrals: number
+}
+
+export const getReferralMe = (token: string | null) =>
+  apiRequest<ReferralInfo>('/referrals/me', token)
+
+export const redeemReferral = (token: string | null, code: string) =>
+  apiRequest<{ redeemed: boolean }>('/referrals/redeem', token, {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  })
+
 export interface LeaderboardEntry {
   username: string | null
   wpm: string
@@ -218,7 +405,7 @@ export interface LeaderboardEntry {
   created_at: string
 }
 
-export type LeaderboardWindow = 'all' | 'day' | 'week'
+export type LeaderboardWindow = 'all' | 'day' | 'week' | 'season'
 export type LeaderboardScope = 'global' | 'friends'
 
 export const getLeaderboard = (
@@ -227,11 +414,17 @@ export const getLeaderboard = (
   difficulty: string,
   window: LeaderboardWindow,
   scope: LeaderboardScope = 'global',
+  /** Explicit 'YYYY-MM' archive month; overrides the window's time filter (§12). */
+  season?: string,
 ) =>
   apiRequest<{ entries: LeaderboardEntry[] }>(
-    `/leaderboard?keySet=${keySet}&difficulty=${difficulty}&window=${window}&scope=${scope}`,
+    `/leaderboard?keySet=${keySet}&difficulty=${difficulty}&window=${window}&scope=${scope}` +
+      (season ? `&season=${encodeURIComponent(season)}` : ''),
     token,
   )
+
+/** Distinct seasons (months) present on the leaderboard, newest first (§12). */
+export const getSeasons = () => apiRequest<{ seasons: string[] }>('/seasons', null)
 
 export interface UserSummary {
   id: string

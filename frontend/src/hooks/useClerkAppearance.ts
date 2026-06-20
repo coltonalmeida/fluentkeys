@@ -51,6 +51,24 @@ const THEME_VARS: Record<Theme, ClerkAppearance['variables']> = {
     colorInputText: '#1f150c',
     colorDanger: '#d11d3b',
   },
+  midnight: {
+    colorPrimary: '#7c5cff',
+    colorBackground: '#141a30',
+    colorText: '#e6e9f5',
+    colorTextSecondary: '#9aa3c0',
+    colorInputBackground: '#1b2440',
+    colorInputText: '#e6e9f5',
+    colorDanger: '#ff6b81',
+  },
+  sunset: {
+    colorPrimary: '#ff5b6e',
+    colorBackground: '#ffe7d3',
+    colorText: '#3a2417',
+    colorTextSecondary: '#8a6a52',
+    colorInputBackground: '#ffd9bf',
+    colorInputText: '#3a2417',
+    colorDanger: '#d11d3b',
+  },
 }
 
 /** Appearance for Clerk's account / sign-in / sign-up modals that mirrors the

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import type { TestStats, WpmSample } from '../lib/stats'
+import { SaveProgressCta } from './SaveProgressCta'
 import { TroubleKeys } from './TroubleKeys'
 import { WpmChart } from './WpmChart'
 
@@ -161,6 +162,10 @@ export function ResultsScreen({
       >
         Try again
       </motion.button>
+
+      <motion.div variants={item} className="flex w-full justify-center">
+        <SaveProgressCta />
+      </motion.div>
     </motion.div>
   )
 }

@@ -4,11 +4,13 @@
     "loading": "Loading…",
     "save": "Save",
     "reset": "Reset to defaults",
-    "saved": "Saved"
+    "saved": "Saved",
+    "resetDone": "Settings restored to defaults"
   },
   "nav": {
     "practice": "Practice",
     "timedTest": "Timed test",
+    "daily": "Daily challenge",
     "settings": "Settings",
     "profile": "Profile",
     "leaderboard": "Leaderboard",

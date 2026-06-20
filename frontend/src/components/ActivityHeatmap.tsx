@@ -6,6 +6,9 @@ import { CursorHoverCard } from './ui/cursor-hover-card'
 interface ActivityHeatmapProps {
   /** Calendar years with activity (from the overview endpoint), newest first. */
   years: number[]
+  /** When provided (public profile), render this rolling-year data instead of
+   *  fetching the signed-in user's activity. Year tabs are hidden (pass years=[]). */
+  staticDays?: DayActivity[]
 }
 
 // Intensity ramp (empty → strongest): an accent-opacity scale so busier days
@@ -140,27 +143,30 @@ function CellTooltip({ entry }: { entry: DayActivity }) {
  * practice section's cursor-following popup (CursorHoverCard) and the same
  * hovered/last dual-state so content stays put during the exit fade.
  */
-export function ActivityHeatmap({ years }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ years, staticDays }: ActivityHeatmapProps) {
   const { getToken } = useAuth()
   const tz = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
   // null = rolling last 12 months; a number = that calendar year.
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
-  const [days, setDays] = useState<DayActivity[] | null>(null)
+  const [fetchedDays, setFetchedDays] = useState<DayActivity[] | null>(null)
   const [error, setError] = useState(false)
 
   useEffect(() => {
+    if (staticDays) return // caller supplied the data; don't fetch
     let cancelled = false
-    setDays(null)
+    setFetchedDays(null)
     setError(false)
     getToken().then((token) =>
       getActivity(token, tz, selectedYear ?? undefined)
-        .then((res) => !cancelled && setDays(res.days))
+        .then((res) => !cancelled && setFetchedDays(res.days))
         .catch(() => !cancelled && setError(true)),
     )
     return () => {
       cancelled = true
     }
-  }, [getToken, tz, selectedYear])
+  }, [getToken, tz, selectedYear, staticDays])
+
+  const days = staticDays ?? fetchedDays
 
   const { weeks, monthLabels } = useMemo(() => buildGrid(selectedYear), [selectedYear])
   const byDate = useMemo(

@@ -4,12 +4,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AchievementToast } from '../components/AchievementToast'
 import { KeyboardVisual } from '../components/KeyboardVisual'
+import { LevelUpToast } from '../components/LevelUpToast'
+import { ReplayPlayer } from '../components/ReplayPlayer'
 import { ResultsScreen } from '../components/ResultsScreen'
 import { TypingArea } from '../components/TypingArea'
 import { useHotkeys } from '../hooks/useHotkeys'
 import { usePreferences } from '../hooks/usePreferences'
+import { useProgression } from '../hooks/useProgression'
 import { useTypingTest, type TestMode, type TestSettings } from '../hooks/useTypingTest'
-import { apiRequest, getWeakKeys, postResult, type User } from '../lib/api'
+import { apiRequest, createDuel, getWeakKeys, postResult, postTrace, type User } from '../lib/api'
+import { reachedIndex } from '../lib/replay'
 import { formatCombo } from '../lib/hotkeys'
 import { getLayout } from '../lib/keyboard'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from '../lib/words'
@@ -61,12 +65,19 @@ export function PracticePage() {
     handleKey,
     restart,
     missCounts,
+    getTrace,
   } = useTypingTest(effectiveSettings, persistedWeakKeys)
 
   const [flashKeyId, setFlashKeyId] = useState<string | null>(null)
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isPersonalBest, setIsPersonalBest] = useState(false)
   const [newAchievements, setNewAchievements] = useState<string[]>([])
+  const [levelUp, setLevelUp] = useState<number | null>(null)
+  const { refresh: refreshProgression } = useProgression()
+  const [replayOpen, setReplayOpen] = useState(false)
+  const [duelLink, setDuelLink] = useState<string | null>(null)
+  const [duelBusy, setDuelBusy] = useState(false)
+  const [resultId, setResultId] = useState<string | null>(null)
 
   // Restart hotkey (default Tab) — works mid-test and on the results screen.
   useHotkeys({ restart })
@@ -77,6 +88,13 @@ export function PracticePage() {
     const id = setTimeout(() => setNewAchievements([]), 3500)
     return () => clearTimeout(id)
   }, [newAchievements])
+
+  // Auto-dismiss the level-up toast.
+  useEffect(() => {
+    if (levelUp === null) return
+    const id = setTimeout(() => setLevelUp(null), 3500)
+    return () => clearTimeout(id)
+  }, [levelUp])
 
   // Wrong keypresses flash the offending key on the visual keyboard.
   const handleTestKey = (key: string) => {
@@ -109,9 +127,11 @@ export function PracticePage() {
     if (status !== 'finished' || !stats || !isSignedIn) return
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clear the prior result's PB flag before the new one resolves
     setIsPersonalBest(false)
+    setDuelLink(null)
+    setResultId(null)
     getToken()
-      .then((token) =>
-        postResult(token, {
+      .then(async (token) => {
+        const res = await postResult(token, {
           keySet: settings.keySet,
           difficulty: settings.difficulty,
           duration: settings.duration,
@@ -126,15 +146,46 @@ export function PracticePage() {
               Object.entries(missCounts).map(([k, v]) => [`miss_${k}`, v]),
             ),
           },
-        }),
-      )
-      .then(({ isPersonalBest, newlyEarned }) => {
-        setIsPersonalBest(isPersonalBest)
-        if (newlyEarned.length > 0) setNewAchievements(newlyEarned)
+        })
+        setIsPersonalBest(res.isPersonalBest)
+        setResultId(res.resultId)
+        if (res.newlyEarned.length > 0) setNewAchievements(res.newlyEarned)
+        if (res.leveledUp) setLevelUp(res.level)
+        // Refresh XP/level + any newly unlocked cosmetics in the shared store.
+        refreshProgression()
+        // Store the keystroke trace for replay (§27) — best-effort.
+        try {
+          await postTrace(token, res.resultId, getTrace())
+        } catch {
+          /* trace is non-critical */
+        }
       })
       .catch((err) => console.error('failed to save result:', err))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per finish
   }, [status])
+
+  // Turn the just-finished test into a shareable ghost duel (§3). The challenger
+  // races the exact words you typed, ending where you ended — so truncate the
+  // target to your final caret position.
+  const challengeFriend = () => {
+    if (!stats || duelBusy) return
+    setDuelBusy(true)
+    const trace = getTrace()
+    const target = trace.target.slice(0, reachedIndex(trace))
+    getToken()
+      .then((token) =>
+        createDuel(token, {
+          target,
+          durationSeconds: trace.durationSeconds,
+          events: trace.events,
+          wpm: stats.wpm,
+          accuracy: stats.accuracy,
+        }),
+      )
+      .then(({ code }) => setDuelLink(`${window.location.origin}/duel/${code}`))
+      .catch((err) => console.error('duel create failed:', err))
+      .finally(() => setDuelBusy(false))
+  }
 
   const showKeyboard = status !== 'finished'
 
@@ -203,6 +254,30 @@ export function PracticePage() {
                 onRestart={restart}
                 isPersonalBest={isPersonalBest}
               />
+              {/* Replay (§27) + challenge-a-friend (§3). */}
+              <div className="mt-4 flex flex-col items-center gap-3">
+                <div className="flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setReplayOpen(true)}
+                    className="rounded-md border border-border px-4 py-2 text-sm text-fg transition-colors hover:bg-surface-2"
+                  >
+                    Watch replay
+                  </button>
+                  {isSignedIn && (
+                    <button
+                      type="button"
+                      onClick={challengeFriend}
+                      disabled={duelBusy}
+                      className="rounded-md border border-accent px-4 py-2 text-sm font-semibold text-accent transition-colors hover:bg-accent/10 disabled:opacity-50"
+                    >
+                      {duelBusy ? 'Creating…' : 'Challenge a friend'}
+                    </button>
+                  )}
+                </div>
+                {resultId && <CopyLink label="Share link" url={shareUrl(resultId)} />}
+                {duelLink && <CopyLink label="Duel link" url={duelLink} />}
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -237,6 +312,54 @@ export function PracticePage() {
       <AnimatePresence>
         {newAchievements.length > 0 && <AchievementToast keys={newAchievements} />}
       </AnimatePresence>
+      <AnimatePresence>
+        {levelUp !== null && <LevelUpToast level={levelUp} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {replayOpen && stats && (
+          <ReplayPlayer trace={getTrace()} onClose={() => setReplayOpen(false)} />
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+/** Share link for a result — points at the backend origin so the OG image
+ *  unfurls (the backend serves per-result meta at /r/:id). In dev (no
+ *  VITE_API_URL) it falls back to the current origin, which still works
+ *  interactively via the SPA route. */
+function shareUrl(resultId: string): string {
+  const apiOrigin =
+    (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ??
+    window.location.origin
+  return `${apiOrigin}/r/${resultId}`
+}
+
+/** A read-only link with a copy button + transient "Copied!" state. */
+function CopyLink({ label, url }: { label: string; url: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3 py-1.5 text-sm">
+      <span className="truncate text-muted" title={url}>
+        {url}
+      </span>
+      <button
+        type="button"
+        aria-label={`Copy ${label}`}
+        onClick={() => {
+          navigator.clipboard
+            ?.writeText(url)
+            .then(() => {
+              setCopied(true)
+              setTimeout(() => setCopied(false), 2000)
+            })
+            .catch(() => {})
+        }}
+        className="shrink-0 rounded bg-accent px-2 py-1 text-xs font-semibold text-accent-contrast hover:bg-accent/90"
+      >
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
     </div>
   )
 }

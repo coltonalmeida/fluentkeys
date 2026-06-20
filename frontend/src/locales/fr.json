@@ -4,11 +4,13 @@
     "loading": "Chargement…",
     "save": "Enregistrer",
     "reset": "Réinitialiser",
-    "saved": "Enregistré"
+    "saved": "Enregistré",
+    "resetDone": "Réglages réinitialisés par défaut"
   },
   "nav": {
     "practice": "Entraînement",
     "timedTest": "Test chronométré",
+    "daily": "Défi du jour",
     "settings": "Réglages",
     "profile": "Profil",
     "leaderboard": "Classement",
@@ -47,7 +49,22 @@
     "codeLanguageHint": "Utilisé par le mode de frappe Code.",
     "resetSection": "Réinitialiser cette section",
     "accountGuest": "Vous n'êtes pas connecté. Les préférences sont enregistrées sur cet appareil.",
-    "accountSynced": "Connecté — les préférences sont synchronisées avec votre profil."
+    "accountSynced": "Connecté — les préférences sont synchronisées avec votre profil.",
+    "username": "Nom d'utilisateur",
+    "usernameHint": "Affiché dans le classement et auprès des rivaux.",
+    "usernamePlaceholder": "votre_pseudo",
+    "usernameSave": "Enregistrer",
+    "usernameSaving": "Enregistrement…",
+    "usernameSaved": "Enregistré",
+    "usernameTaken": "Ce nom d'utilisateur est déjà pris",
+    "usernameInvalid": "Ce nom d'utilisateur n'est pas autorisé — essayez-en un autre.",
+    "usernameLocked": "Vous pourrez changer votre nom d'utilisateur le {{date}}."
+  },
+  "usernameGate": {
+    "title": "Choisissez un nom d'utilisateur",
+    "body": "Choisissez un nom d'utilisateur pour continuer — il est affiché dans le classement et auprès des rivaux. Vous pourrez le changer plus tard (une fois par semaine).",
+    "cta": "Définir le nom d'utilisateur",
+    "saving": "Enregistrement…"
   },
   "profile": {
     "title": "Profil",

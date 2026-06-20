@@ -1,12 +1,17 @@
 import { SignedIn, SignedOut, useAuth, useUser } from '@clerk/clerk-react'
+import { Lock } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 import { AccountManager } from '../components/AccountManager'
+import { CopyField } from '../components/CopyField'
 import { KeyboardVisual } from '../components/KeyboardVisual'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion'
+import { Tooltip } from '../components/ui/Tooltip'
 import { usePreferences } from '../hooks/usePreferences'
-import { ApiError, getMe, updateUsername } from '../lib/api'
+import { useProgression } from '../hooks/useProgression'
+import { ApiError, getMe, getReferralMe, updateUsername } from '../lib/api'
+import { cosmeticsOfKind, isOwned, unlockHint, type CosmeticKind } from '../lib/cosmetics'
 import { comboFromEvent, formatCombo, isModifierOnly } from '../lib/hotkeys'
 import { getLayout, KEYBOARD_LAYOUTS, type LayoutId } from '../lib/keyboard'
 import {
@@ -15,17 +20,28 @@ import {
   FONTS,
   HOTKEYS,
   THEMES,
+  UI_LANGUAGES,
   defaultHotkeys,
   type CodeLanguage,
+  type EquippedCosmetics,
   type FontId,
   type HotkeyAction,
   type Theme,
+  type UiLanguage,
 } from '../lib/preferences'
 
 export function SettingsPage() {
   const { t } = useTranslation()
   const { prefs, update, reset } = usePreferences()
+  const { owned } = useProgression()
   const previewLayout = useMemo(() => getLayout(prefs.keyboardLayout), [prefs.keyboardLayout])
+  const [justReset, setJustReset] = useState(false)
+
+  const handleReset = () => {
+    reset()
+    setJustReset(true)
+    window.setTimeout(() => setJustReset(false), 2500)
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,11 +55,17 @@ export function SettingsPage() {
             onChange={(e) => update({ theme: e.target.value as Theme })}
             className={selectClass}
           >
-            {(Object.keys(THEMES) as Theme[]).map((id) => (
-              <option key={id} value={id}>
-                {THEMES[id].label}
-              </option>
-            ))}
+            {(Object.keys(THEMES) as Theme[]).map((id) => {
+              // Earnable theme cosmetics are disabled until owned.
+              const cosmetic = (THEMES[id] as { cosmetic?: string }).cosmetic
+              const locked = cosmetic ? !owned.has(cosmetic) : false
+              return (
+                <option key={id} value={id} disabled={locked}>
+                  {THEMES[id].label}
+                  {locked ? ' 🔒' : ''}
+                </option>
+              )
+            })}
           </select>
         </Field>
 
@@ -67,6 +89,20 @@ export function SettingsPage() {
         >
           {t('settings.fontPreview')}
         </div>
+
+        <Field label={t('settings.uiLanguage')} hint={t('settings.uiLanguageHint')}>
+          <select
+            value={prefs.language}
+            onChange={(e) => update({ language: e.target.value as UiLanguage })}
+            className={selectClass}
+          >
+            {(Object.keys(UI_LANGUAGES) as UiLanguage[]).map((id) => (
+              <option key={id} value={id}>
+                {UI_LANGUAGES[id].label}
+              </option>
+            ))}
+          </select>
+        </Field>
       </Card>
 
       {/* Keyboard: layout selector with a live re-render of the visual board. */}
@@ -91,6 +127,16 @@ export function SettingsPage() {
           </div>
         </div>
       </Card>
+
+      {/* Rewards: equip earned cosmetics (carets, keyboard skins, frames, badges). */}
+      <SignedIn>
+        <RewardsCard />
+      </SignedIn>
+
+      {/* Invite friends (§4): personal link + reward count. */}
+      <SignedIn>
+        <ReferralCard />
+      </SignedIn>
 
       {/* Goals: daily practice target that drives the streak ring. */}
       <Card title="Goals">
@@ -142,14 +188,23 @@ export function SettingsPage() {
         </SignedIn>
       </Card>
 
-      <div>
+      <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={reset}
+          onClick={handleReset}
           className="rounded-md border border-border px-4 py-2 text-sm text-muted transition-colors hover:bg-surface"
         >
           {t('common.reset')}
         </button>
+        {/* Stays mounted so opacity can transition both in and out. */}
+        <span
+          aria-hidden={!justReset}
+          className={`text-sm font-medium text-accent transition-opacity duration-300 ${
+            justReset ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {t('common.resetDone')}
+        </span>
       </div>
     </div>
   )
@@ -208,6 +263,141 @@ function HotkeysCard() {
         </Field>
       ))}
     </Card>
+  )
+}
+
+/** Invite-a-friend panel (§4): the user's personal link + how many sign-ups it
+ *  has converted. Both the inviter and invitee earn the Recruiter badge + XP. */
+function ReferralCard() {
+  const { getToken } = useAuth()
+  const [code, setCode] = useState<string | null>(null)
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    getToken()
+      .then((t) => getReferralMe(t))
+      .then((r) => {
+        if (cancelled) return
+        setCode(r.code)
+        setCount(r.successfulReferrals)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [getToken])
+
+  return (
+    <Card title="Invite friends">
+      <p className="text-sm text-muted">
+        Share your link. When a friend signs up with it, you both earn the Recruiter badge and 100 XP.
+      </p>
+      {code ? (
+        <>
+          <CopyField value={`${window.location.origin}/?ref=${code}`} />
+          <div className="text-xs text-muted">
+            {count} friend{count === 1 ? '' : 's'} joined with your link.
+          </div>
+        </>
+      ) : (
+        <p className="text-sm text-muted">Loading your invite link…</p>
+      )}
+    </Card>
+  )
+}
+
+/** Cosmetics locker (§15): equip earned carets/keyboard-skins/frames/badges.
+ *  Locked items show their unlock requirement; defaults are always available. */
+function RewardsCard() {
+  const { prefs, update } = usePreferences()
+  const { owned } = useProgression()
+  const equipped = prefs.equippedCosmetics
+
+  const setEquip = (patch: Partial<EquippedCosmetics>) =>
+    update({ equippedCosmetics: { ...equipped, ...patch } })
+
+  return (
+    <Card title="Rewards">
+      <CosmeticRow
+        kind="caret"
+        label="Caret style"
+        value={equipped.caret}
+        owned={owned}
+        onPick={(id) => id && setEquip({ caret: id })}
+      />
+      <CosmeticRow
+        kind="keyboardSkin"
+        label="Keyboard skin"
+        value={equipped.keyboardSkin}
+        owned={owned}
+        onPick={(id) => id && setEquip({ keyboardSkin: id })}
+      />
+      <CosmeticRow
+        kind="frame"
+        label="Profile frame"
+        value={equipped.frame}
+        owned={owned}
+        nullable
+        onPick={(id) => setEquip({ frame: id })}
+      />
+      <CosmeticRow
+        kind="badge"
+        label="Profile badge"
+        value={equipped.badge}
+        owned={owned}
+        nullable
+        onPick={(id) => setEquip({ badge: id })}
+      />
+    </Card>
+  )
+}
+
+function CosmeticRow({
+  kind,
+  label,
+  value,
+  owned,
+  nullable,
+  onPick,
+}: {
+  kind: CosmeticKind
+  label: string
+  value: string | null
+  owned: ReadonlySet<string>
+  nullable?: boolean
+  onPick: (id: string | null) => void
+}) {
+  const items = cosmeticsOfKind(kind)
+  const chip = (selected: boolean) =>
+    `rounded-md border px-3 py-1.5 text-sm transition-colors ${
+      selected ? 'border-accent text-accent' : 'border-border bg-surface text-fg hover:bg-surface-2'
+    }`
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="text-sm font-medium text-fg">{label}</div>
+      <div className="flex flex-wrap gap-2">
+        {nullable && (
+          <button type="button" onClick={() => onPick(null)} className={chip(value === null)}>
+            None
+          </button>
+        )}
+        {items.map((c) =>
+          isOwned(c, owned) ? (
+            <button key={c.id} type="button" onClick={() => onPick(c.id)} className={chip(value === c.id)}>
+              {c.icon ? `${c.icon} ` : ''}
+              {c.label}
+            </button>
+          ) : (
+            <Tooltip key={c.id} label={unlockHint(c.unlock)}>
+              <span className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm text-faint opacity-60">
+                <Lock size={12} aria-hidden /> {c.label}
+              </span>
+            </Tooltip>
+          ),
+        )}
+      </div>
+    </div>
   )
 }
 

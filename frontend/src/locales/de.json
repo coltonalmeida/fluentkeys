@@ -4,11 +4,13 @@
     "loading": "Wird geladen…",
     "save": "Speichern",
     "reset": "Auf Standard zurücksetzen",
-    "saved": "Gespeichert"
+    "saved": "Gespeichert",
+    "resetDone": "Einstellungen auf Standard zurückgesetzt"
   },
   "nav": {
     "practice": "Üben",
     "timedTest": "Zeittest",
+    "daily": "Tägliche Challenge",
     "settings": "Einstellungen",
     "profile": "Profil",
     "leaderboard": "Bestenliste",
@@ -47,7 +49,22 @@
     "codeLanguageHint": "Wird vom Code-Tippmodus verwendet.",
     "resetSection": "Diesen Bereich zurücksetzen",
     "accountGuest": "Nicht angemeldet. Einstellungen werden auf diesem Gerät gespeichert.",
-    "accountSynced": "Angemeldet — Einstellungen werden mit deinem Profil synchronisiert."
+    "accountSynced": "Angemeldet — Einstellungen werden mit deinem Profil synchronisiert.",
+    "username": "Benutzername",
+    "usernameHint": "Wird in der Bestenliste und Rivalen angezeigt.",
+    "usernamePlaceholder": "dein_benutzername",
+    "usernameSave": "Speichern",
+    "usernameSaving": "Wird gespeichert…",
+    "usernameSaved": "Gespeichert",
+    "usernameTaken": "Dieser Benutzername ist vergeben",
+    "usernameInvalid": "Dieser Benutzername ist nicht erlaubt — versuche einen anderen.",
+    "usernameLocked": "Du kannst deinen Benutzernamen am {{date}} wieder ändern."
+  },
+  "usernameGate": {
+    "title": "Benutzernamen wählen",
+    "body": "Wähle einen Benutzernamen, um fortzufahren — er wird in der Bestenliste und Rivalen angezeigt. Du kannst ihn später ändern (einmal pro Woche).",
+    "cta": "Benutzernamen festlegen",
+    "saving": "Wird gespeichert…"
   },
   "profile": {
     "title": "Profil",

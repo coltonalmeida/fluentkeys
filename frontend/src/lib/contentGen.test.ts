@@ -66,6 +66,29 @@ describe('generateLine', () => {
   })
 })
 
+describe('generateLine weak-key bias (§25)', () => {
+  it('words containing a heavily-missed key appear more often', () => {
+    const freqOf = (letter: string, missCounts?: Record<string, number>) => {
+      let withLetter = 0
+      let total = 0
+      for (let seed = 1; seed <= 60; seed++) {
+        const words = generateLine(
+          { unlocked: HOME_ROW, strength: {}, missCounts },
+          seededRng(seed),
+        ).split(' ')
+        for (const w of words) {
+          total += 1
+          if (w.includes(letter)) withLetter += 1
+        }
+      }
+      return withLetter / total
+    }
+    const base = freqOf('k')
+    const biased = freqOf('k', { k: 50 })
+    expect(biased).toBeGreaterThan(base)
+  })
+})
+
 describe('generatePseudoword', () => {
   it('only uses unlocked letters even with a tiny set', () => {
     const unlocked = ['f', 'j', 'a']

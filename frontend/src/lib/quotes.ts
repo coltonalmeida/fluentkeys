@@ -46,7 +46,10 @@ export function pickQuote(targetWords: number): Quote {
  * until at least `targetWords` words are reached. Returns the text plus the set
  * of authors used (for results-screen attribution).
  */
-export function buildQuoteTarget(targetWords: number): { text: string; authors: string[] } {
+export function buildQuoteTarget(
+  targetWords: number,
+  rng: () => number = Math.random,
+): { text: string; authors: string[] } {
   // Short targets: a single closest-length quote reads better than a fragment.
   if (targetWords <= 25) {
     const q = pickQuote(targetWords)
@@ -58,7 +61,7 @@ export function buildQuoteTarget(targetWords: number): { text: string; authors: 
   let words = 0
   const pool = [...QUOTES]
   while (words < targetWords && pool.length > 0) {
-    const idx = Math.floor(Math.random() * pool.length)
+    const idx = Math.floor(rng() * pool.length)
     const q = pool.splice(idx, 1)[0]!
     parts.push(q.text)
     authors.add(q.author)
