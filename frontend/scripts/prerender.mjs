@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 const DIST = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
 // Canonical origin for <link rel=canonical>/OG/sitemap. Override at build time.
-const SITE = (process.env.PUBLIC_WEB_ORIGIN || 'https://fluentkeys.app').replace(/\/$/, '')
+const SITE = (process.env.PUBLIC_WEB_ORIGIN || 'https://fluentkeys.com').replace(/\/$/, '')
 
 const esc = (s) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
