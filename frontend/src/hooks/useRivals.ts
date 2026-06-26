@@ -51,9 +51,9 @@ export function useRivals() {
     (u: UserSummary) => {
       setError(null)
       // Optimistic: show the rival immediately, revert if the follow fails.
+      // Keep the search query/results so the dropdown row stays visible and its
+      // button can flip to "Following" in place (like the profile follow button).
       setFollows((prev) => (prev.some((f) => f.id === u.id) ? prev : [...prev, u]))
-      setQuery('')
-      setResults([])
       getToken()
         .then((t) => follow(t, u.id))
         .catch((e) => {

@@ -29,9 +29,8 @@ export function FriendsCard() {
                   <span className="truncate text-fg">{u.username}</span>
                   <button
                     type="button"
-                    disabled={already}
-                    onClick={() => addRival(u)}
-                    className="text-xs text-accent disabled:text-faint"
+                    onClick={() => (already ? removeRival(u) : addRival(u))}
+                    className={already ? 'text-xs text-muted hover:text-error' : 'text-xs text-accent'}
                   >
                     {already ? 'Following' : 'Follow'}
                   </button>

@@ -4,28 +4,20 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   getLeaderboard,
-  getSeasons,
   type LeaderboardEntry,
   type LeaderboardScope,
   type LeaderboardWindow,
 } from '../lib/api'
 import { useRivals } from '../hooks/useRivals'
+import { Tooltip } from './ui/Tooltip'
 import type { TestMode } from '../hooks/useTypingTest'
 import { TEST_MODES } from '../lib/modes'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from '../lib/words'
 
-const WINDOW_LABELS: Record<LeaderboardWindow, string> = {
+const WINDOW_LABELS: Record<Exclude<LeaderboardWindow, 'season'>, string> = {
   all: 'All time',
-  season: 'This season',
   week: 'This week',
   day: 'Today',
-}
-
-/** 'YYYY-MM' → 'June 2026'. */
-function seasonLabel(id: string): string {
-  const [y, m] = id.split('-').map(Number)
-  if (!y || !m) return id
-  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 }
 
 // Framer Motion is allowed here — leaderboard and results screen only.
@@ -51,10 +43,6 @@ export function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null)
   const [error, setError] = useState(false)
 
-  // Season archives (§12). null = current season; otherwise a 'YYYY-MM' archive.
-  const [seasons, setSeasons] = useState<string[]>([])
-  const [selectedSeason, setSelectedSeason] = useState<string | null>(null)
-
   // Rivals (followees) — drives the Friends scope + list highlighting. Shared with
   // the profile Following card; errors surface instead of being swallowed.
   const {
@@ -70,27 +58,19 @@ export function Leaderboard() {
 
   const friendsGated = scope === 'friends' && !isSignedIn
 
-  // Load the list of seasons once (for the archive picker).
-  useEffect(() => {
-    getSeasons()
-      .then((r) => setSeasons(r.seasons))
-      .catch(() => {})
-  }, [])
-
   useEffect(() => {
     if (friendsGated) return // signed-out + friends: render the gate, don't fetch
     let cancelled = false
     setEntries(null)
     setError(false)
-    const season = window === 'season' && selectedSeason ? selectedSeason : undefined
     getToken()
-      .then((token) => getLeaderboard(token, keySet, difficulty, mode, window, scope, season))
+      .then((token) => getLeaderboard(token, keySet, difficulty, mode, window, scope))
       .then(({ entries }) => !cancelled && setEntries(entries))
       .catch(() => !cancelled && setError(true))
     return () => {
       cancelled = true
     }
-  }, [keySet, difficulty, mode, window, scope, selectedSeason, friendsGated, getToken])
+  }, [keySet, difficulty, mode, window, scope, friendsGated, getToken])
 
   return (
     <div className="flex flex-col gap-4 rounded-lg bg-surface p-6">
@@ -132,21 +112,6 @@ export function Leaderboard() {
               <option key={id} value={id}>{label}</option>
             ))}
           </select>
-          {/* Season archive picker — only when viewing seasons. */}
-          {window === 'season' && seasons.length > 0 && (
-            <select
-              value={selectedSeason ?? ''}
-              onChange={(e) => setSelectedSeason(e.target.value || null)}
-              className={selectClass}
-            >
-              <option value="">This season</option>
-              {seasons.map((s) => (
-                <option key={s} value={s}>
-                  {seasonLabel(s)}
-                </option>
-              ))}
-            </select>
-          )}
         </div>
       </div>
 
@@ -170,9 +135,8 @@ export function Leaderboard() {
                       <span className="truncate text-fg">{u.username}</span>
                       <button
                         type="button"
-                        disabled={already}
-                        onClick={() => addRival(u)}
-                        className="text-xs text-accent disabled:text-faint"
+                        onClick={() => (already ? removeRival(u) : addRival(u))}
+                        className={already ? 'text-xs text-muted hover:text-error' : 'text-xs text-accent'}
                       >
                         {already ? 'Following' : 'Follow'}
                       </button>
@@ -186,7 +150,15 @@ export function Leaderboard() {
             <div className="flex flex-wrap gap-2">
               {follows.map((f) => (
                 <span key={f.id} className="flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-xs text-fg">
-                  {f.username}
+                  {f.username ? (
+                    <Tooltip label="See profile">
+                      <Link to={`/u/${encodeURIComponent(f.username)}`} className="hover:underline">
+                        {f.username}
+                      </Link>
+                    </Tooltip>
+                  ) : (
+                    'anonymous'
+                  )}
                   <button
                     type="button"
                     onClick={() => removeRival(f)}
