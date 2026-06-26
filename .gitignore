@@ -22,5 +22,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Internal markdown docs (CLAUDE.md, specs, etc.) — kept out of the published repo.
+# Internal markdown docs (CLAUDE.md, specs, etc.) — kept out of the published
+# repo. README.md is the exception so the project README stays tracked.
 *.md
+!README.md
