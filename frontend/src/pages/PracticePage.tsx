@@ -287,7 +287,7 @@ export function PracticePage() {
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.2 }}
             >
-              <TypingArea target={target} charStates={charStates} index={index} onKey={handleTestKey} />
+              <TypingArea target={target} charStates={charStates} index={index} onKey={handleTestKey} codeMode={settings.mode === 'code'} />
             </motion.div>
           )}
         </AnimatePresence>

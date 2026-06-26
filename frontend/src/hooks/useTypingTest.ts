@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Trace, TraceEvent } from '../lib/api'
 import { buildCodeTarget } from '../lib/codeSnippets'
 import type { CodeLanguage } from '../lib/preferences'
@@ -70,6 +70,35 @@ function buildTarget(settings: TestSettings, weakKeys: Record<string, number>): 
   return { text: words.join(' '), attribution: null }
 }
 
+/**
+ * Indices that should NOT count toward speed/keystroke stats: the 2nd-and-later
+ * spaces of each line's *leading* indentation. The first space of an indent run
+ * carries the whole block as one unit, so a 4-space indent scores like a single
+ * keystroke — and identically whether typed manually or filled by Tab. Mid-line
+ * spaces and non-code targets (no leading runs) yield an empty set, so every other
+ * mode is unaffected.
+ */
+function indentSkipIndices(target: string): Set<number> {
+  const skip = new Set<number>()
+  let atLineStart = true
+  let sawFirstIndentSpace = false
+  for (let i = 0; i < target.length; i++) {
+    const c = target[i]
+    if (c === '\n') {
+      atLineStart = true
+      sawFirstIndentSpace = false
+      continue
+    }
+    if (atLineStart && c === ' ') {
+      if (sawFirstIndentSpace) skip.add(i) // 2nd+ space of the indent — weightless
+      else sawFirstIndentSpace = true // first space carries the unit
+      continue
+    }
+    atLineStart = false // any non-space (or space past line start) ends the indent
+  }
+  return skip
+}
+
 export function useTypingTest(
   settings: TestSettings,
   /** Persisted miss counts from past sessions (Phase 7) — merged in when they load. */
@@ -108,6 +137,10 @@ export function useTypingTest(
   const [timeline, setTimeline] = useState<WpmSample[]>([])
   const [liveWpm, setLiveWpm] = useState(0)
   const [liveAccuracy, setLiveAccuracy] = useState(100)
+
+  // Indent spaces that don't count toward stats (see indentSkipIndices). Each
+  // line's leading-indent block collapses to one unit for WPM and keystrokes.
+  const indentSkip = useMemo(() => indentSkipIndices(target), [target])
 
   const restart = useCallback(() => {
     keystrokesRef.current = 0
@@ -160,8 +193,15 @@ export function useTypingTest(
 
   const finish = useCallback(
     (states: CharState[], completed = false) => {
-      const correct = states.filter((s) => s === 'correct').length
-      const incorrect = states.filter((s) => s === 'incorrect').length
+      // Skip weightless indent spaces so the final WPM matches the live readout
+      // (keystrokesRef is already collapsed in handleKey, keeping accuracy consistent).
+      let correct = 0
+      let incorrect = 0
+      for (let i = 0; i < states.length; i++) {
+        if (indentSkip.has(i)) continue
+        if (states[i] === 'correct') correct += 1
+        else if (states[i] === 'incorrect') incorrect += 1
+      }
       // A completed run (typed the whole target — e.g. a duel passage) is measured
       // over the real elapsed time; a timed run uses its fixed duration.
       const elapsed =
@@ -172,7 +212,7 @@ export function useTypingTest(
       setTimeline(timelineRef.current)
       setStatus('finished')
     },
-    [settings.duration],
+    [settings.duration, indentSkip],
   )
 
   // Countdown + per-second timeline sampling
@@ -219,13 +259,53 @@ export function useTypingTest(
       if (key === 'Backspace') {
         if (index === 0) return
         // Keep the cumulative timeline counters in sync with what's on screen.
-        if (charStates[index - 1] === 'correct') correctRef.current -= 1
-        typedRef.current -= 1
+        // Weightless indent spaces never bumped these, so don't un-bump them.
+        if (!indentSkip.has(index - 1)) {
+          if (charStates[index - 1] === 'correct') correctRef.current -= 1
+          typedRef.current -= 1
+        }
         if (traceStartRef.current && traceRef.current.length < MAX_TRACE_EVENTS) {
           traceRef.current.push({ t: Math.round(performance.now() - traceStartRef.current), ch: '\b', ok: true })
         }
         setIndex(index - 1)
         setCharStates((prev) => prev.slice(0, index - 1))
+        return
+      }
+
+      // Tab (code mode only): auto-type the line's leading indentation — the run
+      // of spaces from the caret up to the next non-space char. Matches the
+      // snippet's exact indent depth; a no-op anywhere the next char isn't a space.
+      if (key === 'Tab') {
+        if (settings.mode !== 'code') return
+        let run = 0
+        while (target[index + run] === ' ') run += 1
+        if (run === 0) return
+        if (status === 'idle') {
+          setStatus('running')
+          traceStartRef.current = performance.now()
+        }
+        // The whole indent block counts as one unit (one keystroke / one correct
+        // char), matching a manually-typed indent where only the first space
+        // counts. Trace still records every space so replay reproduces the indent.
+        keystrokesRef.current += 1
+        typedRef.current += 1
+        correctRef.current += 1
+        liveCorrectRef.current += 1
+        correctTimestampsRef.current.push(performance.now())
+        const next = [...charStates]
+        for (let k = 0; k < run; k++) {
+          if (traceRef.current.length < MAX_TRACE_EVENTS) {
+            traceRef.current.push({
+              t: Math.round(performance.now() - traceStartRef.current),
+              ch: ' ',
+              ok: true,
+            })
+          }
+          next[index + k] = 'correct'
+        }
+        setCharStates(next)
+        setIndex(index + run)
+        if (index + run >= target.length) finish(next, true)
         return
       }
 
@@ -237,19 +317,27 @@ export function useTypingTest(
         traceStartRef.current = performance.now()
       }
 
-      keystrokesRef.current += 1
-      typedRef.current += 1
+      // Weightless = a 2nd+ space of leading indentation: it still renders and
+      // advances, but doesn't bump any stat counter, so the indent block scores as
+      // a single unit (identically to filling it with Tab).
+      const weightless = indentSkip.has(index)
+      if (!weightless) {
+        keystrokesRef.current += 1
+        typedRef.current += 1
+      }
       const expected = target[index]
       const correct = ch === expected
       if (traceRef.current.length < MAX_TRACE_EVENTS) {
         traceRef.current.push({ t: Math.round(performance.now() - traceStartRef.current), ch, ok: correct })
       }
       if (correct) {
-        correctRef.current += 1
-        liveCorrectRef.current += 1
-        correctTimestampsRef.current.push(performance.now())
+        if (!weightless) {
+          correctRef.current += 1
+          liveCorrectRef.current += 1
+          correctTimestampsRef.current.push(performance.now())
+        }
       } else {
-        errorsThisSecondRef.current += 1
+        if (!weightless) errorsThisSecondRef.current += 1
         if (expected !== undefined && expected !== ' ' && expected !== '\n') {
           weakKeysRef.current[expected] = (weakKeysRef.current[expected] ?? 0) + 1
         }
@@ -262,7 +350,7 @@ export function useTypingTest(
 
       if (index + 1 >= target.length) finish(next, true)
     },
-    [status, index, target, charStates, finish],
+    [status, index, target, charStates, finish, settings.mode, indentSkip],
   )
 
   return {

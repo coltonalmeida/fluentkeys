@@ -6,6 +6,9 @@ interface TypingAreaProps {
   charStates: CharState[]
   index: number
   onKey: (key: string) => void
+  /** Code mode: forward bare Tab to onKey so the engine can auto-type the line's
+   *  indentation. Shift+Tab still falls through to the restart hotkey. */
+  codeMode?: boolean
 }
 
 const charClass = (state: CharState | undefined): string => {
@@ -14,7 +17,7 @@ const charClass = (state: CharState | undefined): string => {
   return 'text-faint'
 }
 
-export function TypingArea({ target, charStates, index, onKey }: TypingAreaProps) {
+export function TypingArea({ target, charStates, index, onKey, codeMode = false }: TypingAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const caretRef = useRef<HTMLDivElement>(null)
   const charRefs = useRef<(HTMLSpanElement | null)[]>([])
@@ -61,13 +64,22 @@ export function TypingArea({ target, charStates, index, onKey }: TypingAreaProps
       if (e.ctrlKey || e.metaKey || e.altKey) return
       const t = e.target as HTMLElement | null
       if (t?.closest('input, select, textarea, button, [contenteditable="true"]')) return
+      // Code mode: bare Tab indents (engine auto-types the leading spaces). Stop
+      // the event here so a stale Tab→restart binding can't also fire; Shift+Tab
+      // is left alone so it still reaches the restart hotkey.
+      if (codeMode && e.key === 'Tab' && !e.shiftKey) {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        onKey('Tab')
+        return
+      }
       if (e.key.length !== 1 && e.key !== 'Backspace' && e.key !== 'Enter') return
       e.preventDefault()
       onKey(e.key)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onKey])
+  }, [onKey, codeMode])
 
   // Soft-keyboard input: keydown is unreliable on mobile (keyCode 229), so read
   // beforeinput instead. Each inserted char (or a backspace) maps to onKey.

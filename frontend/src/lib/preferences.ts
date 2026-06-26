@@ -63,7 +63,8 @@ export const CODE_LANGUAGES: Record<CodeLanguage, { label: string }> = {
 /** Rebindable site hotkeys. Combos are normalized strings (see lib/hotkeys.ts):
  *  modifiers lower-cased + `+`-joined, e.g. "alt+t", "Tab", "shift+Enter". The
  *  nav defaults use Alt so they never collide with the typing capture (which
- *  ignores modifier chords); restart uses Tab (not a printable char). */
+ *  ignores modifier chords); restart uses Shift+Tab so the bare Tab key is free
+ *  to indent in Code mode. */
 export type HotkeyAction =
   | 'restart'
   | 'goTrainer'
@@ -75,7 +76,7 @@ export type HotkeyAction =
   | 'stopPractice'
 
 export const HOTKEYS: Record<HotkeyAction, { label: string; default: string }> = {
-  restart: { label: 'Restart test', default: 'Tab' },
+  restart: { label: 'Restart test', default: 'shift+Tab' },
   goTrainer: { label: 'Go to Trainer', default: 'alt+h' },
   goTest: { label: 'Go to Timed Test', default: 'alt+t' },
   goLeaderboard: { label: 'Go to Leaderboard', default: 'alt+l' },
@@ -121,7 +122,7 @@ export interface UserPreferences {
 }
 
 /** Bump when the stored shape changes; `migrate` handles older versions. */
-export const PREFERENCES_VERSION = 6
+export const PREFERENCES_VERSION = 7
 
 /** Selectable daily-goal options, in minutes. */
 export const DAILY_GOALS = [0, 5, 10, 15, 30, 60] as const
@@ -165,13 +166,16 @@ const LAYOUT_IDS = Object.keys(KEYBOARD_LAYOUTS) as LayoutId[]
 const CODE_LANGUAGE_IDS = Object.keys(CODE_LANGUAGES) as CodeLanguage[]
 const UI_LANGUAGE_IDS = Object.keys(UI_LANGUAGES) as UiLanguage[]
 
-function normalizeHotkeys(raw: unknown): Record<HotkeyAction, string> {
+function normalizeHotkeys(raw: unknown, priorVersion: number): Record<HotkeyAction, string> {
   const r = (raw ?? {}) as Partial<Record<HotkeyAction, unknown>>
   const out = {} as Record<HotkeyAction, string>
   for (const a of HOTKEY_ACTIONS) {
     const v = r[a]
     out[a] = typeof v === 'string' && v.length > 0 ? v : HOTKEYS[a].default
   }
+  // v7: restart's default moved Tab → Shift+Tab so the bare Tab key can indent in
+  // Code mode. Clear the deprecated Tab default for anyone who never customized it.
+  if (priorVersion < 7 && out.restart === 'Tab') out.restart = HOTKEYS.restart.default
   return out
 }
 
@@ -207,7 +211,7 @@ export function normalizePreferences(raw: unknown): UserPreferences {
     keyboardLayout: LAYOUT_IDS.includes(p.keyboardLayout as LayoutId)
       ? (p.keyboardLayout as LayoutId)
       : DEFAULT_PREFERENCES.keyboardLayout,
-    hotkeys: normalizeHotkeys(p.hotkeys),
+    hotkeys: normalizeHotkeys(p.hotkeys, typeof p.version === 'number' ? p.version : 0),
     dailyGoal: DAILY_GOALS.includes(p.dailyGoal as (typeof DAILY_GOALS)[number])
       ? (p.dailyGoal as number)
       : DEFAULT_PREFERENCES.dailyGoal,

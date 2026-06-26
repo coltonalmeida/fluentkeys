@@ -182,7 +182,7 @@ export function DailyChallengePage() {
           ) : (
             <motion.div key="test" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.2 }}>
               {cfg ? (
-                <TypingArea target={test.target} charStates={test.charStates} index={test.index} onKey={test.handleKey} />
+                <TypingArea target={test.target} charStates={test.charStates} index={test.index} onKey={test.handleKey} codeMode={settings.mode === 'code'} />
               ) : (
                 <p className="text-sm text-muted">Loading…</p>
               )}
