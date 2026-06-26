@@ -19,6 +19,5 @@ are computed client-side as you type, then validated server-side on completion.
 | Routing & i18n | [React Router](https://reactrouter.com) · [i18next](https://www.i18next.com/) |
 | Auth | [Clerk](https://clerk.com) |
 | Backend | [Node.js](https://nodejs.org) · [Express](https://expressjs.com) · [TypeScript](https://www.typescriptlang.org/) |
-| Database | [PostgreSQL](https://www.postgresql.org/) |
 | Testing & lint | [Vitest](https://vitest.dev) · [ESLint](https://eslint.org) |
-| Hosting | [Vercel](https://vercel.com) (frontend) · [Render](https://render.com) (backend) · [Supabase](https://supabase.com) (database) |
+| Hosting | [Vercel](https://vercel.com) (frontend) · [Render](https://render.com) (backend) · [Supabase](https://supabase.com) (Postgres) |
