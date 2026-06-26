@@ -15,13 +15,10 @@ are computed client-side as you type, then validated server-side on completion.
 
 | Layer | Tooling |
 | --- | --- |
-| Frontend | [React 19](https://react.dev) · [TypeScript](https://www.typescriptlang.org/) · [Vite](https://vite.dev) · [Tailwind CSS](https://tailwindcss.com) |
-| UI & motion | [Framer Motion](https://www.framer.com/motion/) (results + leaderboard only) · [Radix UI](https://www.radix-ui.com/) · [lucide-react](https://lucide.dev) |
+| Frontend | [React 19](https://react.dev) · [TypeScript](https://www.typescriptlang.org/) · [Vite](https://vite.dev) · [Tailwind CSS](https://tailwindcss.com) · [Framer Motion](https://www.framer.com/motion/) · [Radix UI](https://www.radix-ui.com/) · [lucide-react](https://lucide.dev) |
 | Routing & i18n | [React Router](https://reactrouter.com) · [i18next](https://www.i18next.com/) |
-| Auth | [Clerk](https://clerk.com) — `@clerk/clerk-react` + `@clerk/express`, webhooks via [`svix`](https://www.svix.com/) |
+| Auth | [Clerk](https://clerk.com) |
 | Backend | [Node.js](https://nodejs.org) · [Express](https://expressjs.com) · [TypeScript](https://www.typescriptlang.org/) |
 | Database | [PostgreSQL](https://www.postgresql.org/) via [`pg`](https://node-postgres.com/) · migrations with [`node-pg-migrate`](https://github.com/salsita/node-pg-migrate) |
-| Hardening | [Helmet](https://helmetjs.github.io/) · [`cors`](https://github.com/expressjs/cors) · [`express-rate-limit`](https://github.com/express-rate-limit/express-rate-limit) |
-| Word generation | Static word lists + weighted selection (no AI, no external API) |
 | Testing & lint | [Vitest](https://vitest.dev) · [ESLint](https://eslint.org) |
 | Hosting | [Vercel](https://vercel.com) (frontend) · [Render](https://render.com) (backend) · [Supabase](https://supabase.com) (Postgres) |
