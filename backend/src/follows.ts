@@ -74,12 +74,14 @@ followsRouter.post(
   }),
 )
 
+// followeeId is a path param (not a request body): some proxies/CDNs drop bodies
+// on DELETE, which silently broke unfollow.
 followsRouter.delete(
-  '/follows',
+  '/follows/:followeeId',
   wrap(async (req, res) => {
     const { userId: clerkId } = getAuth(req)
     const me = await upsertUser(clerkId!)
-    const followeeId = String((req.body as { followeeId?: unknown }).followeeId ?? '')
+    const followeeId = String(req.params.followeeId ?? '')
     if (!/^\d+$/.test(followeeId)) {
       res.status(400).json({ error: 'Invalid followeeId' })
       return

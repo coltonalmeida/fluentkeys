@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AchievementsGrid } from '../components/AchievementsGrid'
 import { ActivityHeatmap } from '../components/ActivityHeatmap'
-import { follow, getFollows, getPublicProfile, unfollow, type PublicProfile } from '../lib/api'
+import { ApiError, follow, getFollows, getPublicProfile, unfollow, type PublicProfile } from '../lib/api'
 import { COSMETICS_BY_ID } from '../lib/cosmetics'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from '../lib/words'
 
@@ -16,8 +16,10 @@ export function PublicProfilePage() {
   const { isSignedIn, getToken } = useAuth()
   const { user } = useUser()
   const [profile, setProfile] = useState<PublicProfile | null>(null)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'notfound'>('loading')
+  const [status, setStatus] = useState<'loading' | 'ready' | 'notfound' | 'error'>('loading')
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [following, setFollowing] = useState(false)
+  const [followError, setFollowError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -30,7 +32,17 @@ export function PublicProfilePage() {
         setProfile(p)
         setStatus('ready')
       })
-      .catch(() => !cancelled && setStatus('notfound'))
+      .catch((e) => {
+        if (cancelled) return
+        // A real 404 is "no such player"; anything else is a genuine failure we
+        // should show (not silently masquerade as not-found).
+        if (e instanceof ApiError && e.status === 404) {
+          setStatus('notfound')
+        } else {
+          setLoadError(e instanceof Error ? e.message : 'Could not load this profile.')
+          setStatus('error')
+        }
+      })
     return () => {
       cancelled = true
     }
@@ -55,14 +67,29 @@ export function PublicProfilePage() {
   const toggleFollow = () => {
     if (!profile || busy) return
     setBusy(true)
+    setFollowError(null)
+    const next = !following
+    setFollowing(next) // optimistic
     getToken()
-      .then((t) => (following ? unfollow(t, profile.id) : follow(t, profile.id)))
-      .then(() => setFollowing((v) => !v))
-      .catch(() => {})
+      .then((t) => (next ? follow(t, profile.id) : unfollow(t, profile.id)))
+      .catch((e) => {
+        setFollowing(!next) // revert on failure
+        setFollowError(e instanceof Error ? e.message : 'Could not update follow.')
+      })
       .finally(() => setBusy(false))
   }
 
   if (status === 'loading') return <p className="text-sm text-muted">Loading profile…</p>
+  if (status === 'error') {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-error">Couldn’t load this profile{loadError ? ` — ${loadError}` : '.'}</p>
+        <Link to="/leaderboard" className="text-sm text-accent underline">
+          Back to the leaderboard
+        </Link>
+      </div>
+    )
+  }
   if (status === 'notfound' || !profile) {
     return (
       <div className="flex flex-col gap-3">
@@ -114,18 +141,21 @@ export function PublicProfilePage() {
             <div className="text-xs text-muted">tests</div>
           </div>
           {isSignedIn && !isSelf && (
-            <button
-              type="button"
-              onClick={toggleFollow}
-              disabled={busy}
-              className={`rounded-md px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 ${
-                following
-                  ? 'border border-border bg-surface text-muted hover:bg-surface-2'
-                  : 'bg-accent text-accent-contrast hover:bg-accent/90'
-              }`}
-            >
-              {following ? 'Following' : 'Follow'}
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                type="button"
+                onClick={toggleFollow}
+                disabled={busy}
+                className={`rounded-md px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  following
+                    ? 'border border-border bg-surface text-muted hover:bg-surface-2'
+                    : 'bg-accent text-accent-contrast hover:bg-accent/90'
+                }`}
+              >
+                {following ? 'Following' : 'Follow'}
+              </button>
+              {followError && <span className="text-xs text-error">{followError}</span>}
+            </div>
           )}
         </div>
       </section>

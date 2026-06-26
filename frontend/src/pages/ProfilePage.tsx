@@ -1,6 +1,7 @@
 import { SignedIn, SignedOut } from '@clerk/clerk-react'
 import { useTranslation } from 'react-i18next'
 import { AccountPrompt } from '../components/AccountPrompt'
+import { FriendsCard } from '../components/FriendsCard'
 import { LocalProgress } from '../components/LocalProgress'
 import { ProgressionCard } from '../components/ProgressionCard'
 import { StatsPanel } from '../components/StatsPanel'
@@ -14,6 +15,7 @@ export function ProfilePage() {
       <SignedIn>
         <ProgressionCard />
         <StatsPanel />
+        <FriendsCard />
       </SignedIn>
       <SignedOut>
         <LocalProgress />

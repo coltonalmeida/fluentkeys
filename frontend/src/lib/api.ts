@@ -445,8 +445,8 @@ export const follow = (token: string | null, followeeId: string) =>
     body: JSON.stringify({ followeeId }),
   })
 
+// followeeId in the path: DELETE bodies are dropped by some proxies/CDNs.
 export const unfollow = (token: string | null, followeeId: string) =>
-  apiRequest<{ ok: boolean }>('/follows', token, {
+  apiRequest<{ ok: boolean }>(`/follows/${encodeURIComponent(followeeId)}`, token, {
     method: 'DELETE',
-    body: JSON.stringify({ followeeId }),
   })

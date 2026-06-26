@@ -1,19 +1,15 @@
 import { useAuth, useUser } from '@clerk/clerk-react'
 import { motion } from 'framer-motion'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  follow,
-  getFollows,
   getLeaderboard,
   getSeasons,
-  searchUsers,
-  unfollow,
   type LeaderboardEntry,
   type LeaderboardScope,
   type LeaderboardWindow,
-  type UserSummary,
 } from '../lib/api'
+import { useRivals } from '../hooks/useRivals'
 import type { TestMode } from '../hooks/useTypingTest'
 import { TEST_MODES } from '../lib/modes'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from '../lib/words'
@@ -59,26 +55,20 @@ export function Leaderboard() {
   const [seasons, setSeasons] = useState<string[]>([])
   const [selectedSeason, setSelectedSeason] = useState<string | null>(null)
 
-  // Rivals (followees) — drives the Friends scope + list highlighting.
-  const [follows, setFollows] = useState<UserSummary[]>([])
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<UserSummary[]>([])
+  // Rivals (followees) — drives the Friends scope + list highlighting. Shared with
+  // the profile Following card; errors surface instead of being swallowed.
+  const {
+    follows,
+    followUsernames,
+    query,
+    results,
+    error: rivalError,
+    runSearch,
+    addRival,
+    removeRival,
+  } = useRivals()
 
-  const followUsernames = new Set(follows.map((f) => f.username))
   const friendsGated = scope === 'friends' && !isSignedIn
-
-  const refreshFollows = useCallback(() => {
-    if (!isSignedIn) return
-    getToken().then((token) =>
-      getFollows(token)
-        .then((r) => setFollows(r.follows))
-        .catch(() => {}),
-    )
-  }, [getToken, isSignedIn])
-
-  useEffect(() => {
-    refreshFollows()
-  }, [refreshFollows])
 
   // Load the list of seasons once (for the archive picker).
   useEffect(() => {
@@ -101,39 +91,6 @@ export function Leaderboard() {
       cancelled = true
     }
   }, [keySet, difficulty, mode, window, scope, selectedSeason, friendsGated, getToken])
-
-  const runSearch = (q: string) => {
-    setQuery(q)
-    if (q.trim().length < 1) {
-      setResults([])
-      return
-    }
-    getToken().then((token) =>
-      searchUsers(token, q)
-        .then((r) => setResults(r.users))
-        .catch(() => setResults([])),
-    )
-  }
-
-  const addRival = (u: UserSummary) => {
-    getToken().then((token) =>
-      follow(token, u.id)
-        .then(() => {
-          setFollows((prev) => (prev.some((f) => f.id === u.id) ? prev : [...prev, u]))
-          setQuery('')
-          setResults([])
-        })
-        .catch(() => {}),
-    )
-  }
-
-  const removeRival = (u: UserSummary) => {
-    getToken().then((token) =>
-      unfollow(token, u.id)
-        .then(() => setFollows((prev) => prev.filter((f) => f.id !== u.id)))
-        .catch(() => {}),
-    )
-  }
 
   return (
     <div className="flex flex-col gap-4 rounded-lg bg-surface p-6">
@@ -196,6 +153,7 @@ export function Leaderboard() {
       {/* Rival management — Friends scope, signed-in only. */}
       {scope === 'friends' && isSignedIn && (
         <div className="flex flex-col gap-3 rounded-md bg-surface-2 p-4">
+          {rivalError && <p className="text-sm text-error">{rivalError}</p>}
           <div className="relative">
             <input
               value={query}
