@@ -42,6 +42,7 @@ export async function apiRequest<T>(
 export interface ResultPayload {
   keySet: string
   difficulty: string
+  mode: string
   duration: number
   wpm: number
   accuracy: number
@@ -412,13 +413,14 @@ export const getLeaderboard = (
   token: string | null,
   keySet: string,
   difficulty: string,
+  mode: string,
   window: LeaderboardWindow,
   scope: LeaderboardScope = 'global',
   /** Explicit 'YYYY-MM' archive month; overrides the window's time filter (§12). */
   season?: string,
 ) =>
   apiRequest<{ entries: LeaderboardEntry[] }>(
-    `/leaderboard?keySet=${keySet}&difficulty=${difficulty}&window=${window}&scope=${scope}` +
+    `/leaderboard?keySet=${keySet}&difficulty=${difficulty}&mode=${mode}&window=${window}&scope=${scope}` +
       (season ? `&season=${encodeURIComponent(season)}` : ''),
     token,
   )

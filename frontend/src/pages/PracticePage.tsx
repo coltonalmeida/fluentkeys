@@ -16,16 +16,13 @@ import { apiRequest, createDuel, getWeakKeys, postResult, postTrace, type User }
 import { reachedIndex } from '../lib/replay'
 import { formatCombo } from '../lib/hotkeys'
 import { getLayout } from '../lib/keyboard'
+import { TEST_MODES } from '../lib/modes'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from '../lib/words'
 
 const DURATIONS = [5, 15, 30, 60] as const
-const MODES: [TestMode, string][] = [
-  ['words', 'Words'],
-  ['punctuation', 'Punctuation'],
-  ['numbers', 'Numbers'],
-  ['quotes', 'Quotes'],
-  ['code', 'Code'],
-]
+const MODES = Object.entries(TEST_MODES).map(
+  ([id, m]) => [id, m.label] as [TestMode, string],
+)
 
 // The timed test (/test). The unboxing animation belongs to the home page only,
 // so this page shows its keyboard immediately.
@@ -134,6 +131,7 @@ export function PracticePage() {
         const res = await postResult(token, {
           keySet: settings.keySet,
           difficulty: settings.difficulty,
+          mode: settings.mode,
           duration: settings.duration,
           wpm: stats.wpm,
           accuracy: stats.accuracy,

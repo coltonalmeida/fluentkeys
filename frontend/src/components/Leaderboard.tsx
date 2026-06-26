@@ -14,6 +14,8 @@ import {
   type LeaderboardWindow,
   type UserSummary,
 } from '../lib/api'
+import type { TestMode } from '../hooks/useTypingTest'
+import { TEST_MODES } from '../lib/modes'
 import { DIFFICULTIES, KEY_SETS, type Difficulty, type KeySetId } from '../lib/words'
 
 const WINDOW_LABELS: Record<LeaderboardWindow, string> = {
@@ -47,6 +49,7 @@ export function Leaderboard() {
   const { getToken, isSignedIn } = useAuth()
   const [keySet, setKeySet] = useState<KeySetId>('all')
   const [difficulty, setDifficulty] = useState<Difficulty>('medium')
+  const [mode, setMode] = useState<TestMode>('words')
   const [window, setWindow] = useState<LeaderboardWindow>('all')
   const [scope, setScope] = useState<LeaderboardScope>('global')
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null)
@@ -91,13 +94,13 @@ export function Leaderboard() {
     setError(false)
     const season = window === 'season' && selectedSeason ? selectedSeason : undefined
     getToken()
-      .then((token) => getLeaderboard(token, keySet, difficulty, window, scope, season))
+      .then((token) => getLeaderboard(token, keySet, difficulty, mode, window, scope, season))
       .then(({ entries }) => !cancelled && setEntries(entries))
       .catch(() => !cancelled && setError(true))
     return () => {
       cancelled = true
     }
-  }, [keySet, difficulty, window, scope, selectedSeason, friendsGated, getToken])
+  }, [keySet, difficulty, mode, window, scope, selectedSeason, friendsGated, getToken])
 
   const runSearch = (q: string) => {
     setQuery(q)
@@ -160,6 +163,11 @@ export function Leaderboard() {
           <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as Difficulty)} className={selectClass}>
             {Object.entries(DIFFICULTIES).map(([id, d]) => (
               <option key={id} value={id}>{d.label}</option>
+            ))}
+          </select>
+          <select value={mode} onChange={(e) => setMode(e.target.value as TestMode)} className={selectClass}>
+            {Object.entries(TEST_MODES).map(([id, m]) => (
+              <option key={id} value={id}>{m.label}</option>
             ))}
           </select>
           <select value={window} onChange={(e) => setWindow(e.target.value as LeaderboardWindow)} className={selectClass}>

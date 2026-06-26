@@ -9,6 +9,7 @@ import { awardXp, syncRewards, xpForResult } from './progression.js'
 const KEY_SETS = new Set(['home', 'home-top', 'all'])
 const DIFFICULTIES = new Set(['easy', 'medium', 'hard'])
 const DURATIONS = new Set([5, 15, 30, 60])
+const MODES = new Set(['words', 'punctuation', 'numbers', 'quotes', 'code'])
 
 const wrap =
   (fn: (req: Request, res: Response) => Promise<void>) =>
@@ -18,6 +19,7 @@ const wrap =
 interface ResultBody {
   keySet: string
   difficulty: string
+  mode: string
   duration: number
   wpm: number
   accuracy: number
@@ -30,6 +32,7 @@ function validate(body: unknown): ResultBody | string {
   const b = body as Partial<ResultBody>
   if (typeof b.keySet !== 'string' || !KEY_SETS.has(b.keySet)) return 'Invalid keySet'
   if (typeof b.difficulty !== 'string' || !DIFFICULTIES.has(b.difficulty)) return 'Invalid difficulty'
+  if (typeof b.mode !== 'string' || !MODES.has(b.mode)) return 'Invalid mode'
   if (typeof b.duration !== 'number' || !DURATIONS.has(b.duration)) return 'Invalid duration'
   if (typeof b.wpm !== 'number' || b.wpm < 0 || b.wpm > 400) return 'Invalid wpm'
   if (typeof b.rawWpm !== 'number' || b.rawWpm < 0 || b.rawWpm > 500) return 'Invalid rawWpm'
@@ -74,9 +77,9 @@ resultsRouter.post(
     try {
       await client.query('BEGIN')
       const session = await client.query<{ id: string }>(
-        `INSERT INTO test_sessions (user_id, key_set, difficulty, duration)
-         VALUES ($1, $2, $3, $4) RETURNING id`,
-        [user.id, parsed.keySet, parsed.difficulty, parsed.duration],
+        `INSERT INTO test_sessions (user_id, key_set, difficulty, mode, duration)
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [user.id, parsed.keySet, parsed.difficulty, parsed.mode, parsed.duration],
       )
       const sessionId = session.rows[0]!.id
 
@@ -89,19 +92,19 @@ resultsRouter.post(
 
       // PB upsert: only replaces when the new wpm is strictly higher.
       const pb = await client.query(
-        `INSERT INTO personal_bests (user_id, key_set, difficulty, wpm, accuracy, result_id)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (user_id, key_set, difficulty)
+        `INSERT INTO personal_bests (user_id, key_set, difficulty, mode, wpm, accuracy, result_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (user_id, key_set, difficulty, mode)
          DO UPDATE SET wpm = EXCLUDED.wpm, accuracy = EXCLUDED.accuracy,
                        result_id = EXCLUDED.result_id, achieved_at = now()
          WHERE EXCLUDED.wpm > personal_bests.wpm
          RETURNING id`,
-        [user.id, parsed.keySet, parsed.difficulty, parsed.wpm, parsed.accuracy, resultId],
+        [user.id, parsed.keySet, parsed.difficulty, parsed.mode, parsed.wpm, parsed.accuracy, resultId],
       )
       await client.query(
-        `INSERT INTO leaderboard_entries (user_id, key_set, difficulty, wpm, accuracy)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [user.id, parsed.keySet, parsed.difficulty, parsed.wpm, parsed.accuracy],
+        `INSERT INTO leaderboard_entries (user_id, key_set, difficulty, mode, wpm, accuracy)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [user.id, parsed.keySet, parsed.difficulty, parsed.mode, parsed.wpm, parsed.accuracy],
       )
       // XP first so level-based achievements see the new level this same call.
       const xp = await awardXp(client, user.id, xpForResult(parsed.wpm, parsed.duration))
@@ -133,7 +136,7 @@ resultsRouter.get(
     const limit = Math.min(Number(req.query.limit) || 20, 100)
     const { rows } = await pool.query(
       `SELECT r.id, r.wpm, r.accuracy, r.raw_wpm, r.created_at,
-              s.key_set, s.difficulty, s.duration
+              s.key_set, s.difficulty, s.mode, s.duration
        FROM results r
        JOIN test_sessions s ON s.id = r.session_id
        WHERE r.user_id = $1
@@ -180,10 +183,10 @@ resultsRouter.get(
     const { userId: clerkId } = getAuth(req)
     const user = await upsertUser(clerkId!)
     const { rows } = await pool.query(
-      `SELECT key_set, difficulty, wpm, accuracy, achieved_at
+      `SELECT key_set, difficulty, mode, wpm, accuracy, achieved_at
        FROM personal_bests
        WHERE user_id = $1
-       ORDER BY key_set, difficulty`,
+       ORDER BY key_set, difficulty, mode`,
       [user.id],
     )
     res.json({ personalBests: rows })

@@ -5,6 +5,7 @@ import { pool } from './db.js'
 
 const KEY_SETS = ['home', 'home-top', 'all'] as const
 const DIFFICULTIES = ['easy', 'medium', 'hard'] as const
+const MODES = ['words', 'punctuation', 'numbers', 'quotes', 'code'] as const
 // 'season' = the current calendar month; an explicit ?season=YYYY-MM views an archive.
 const WINDOWS = ['all', 'day', 'week', 'season'] as const
 const SCOPES = ['global', 'friends'] as const
@@ -45,15 +46,17 @@ leaderboardRouter.get(
   wrap(async (req, res) => {
     const keySet = String(req.query.keySet ?? 'all')
     const difficulty = String(req.query.difficulty ?? 'medium')
+    const mode = String(req.query.mode ?? 'words')
     const window = String(req.query.window ?? 'all') as Window
     const scope = String(req.query.scope ?? 'global')
     if (
       !(KEY_SETS as readonly string[]).includes(keySet) ||
       !(DIFFICULTIES as readonly string[]).includes(difficulty) ||
+      !(MODES as readonly string[]).includes(mode) ||
       !WINDOWS.includes(window) ||
       !(SCOPES as readonly string[]).includes(scope)
     ) {
-      res.status(400).json({ error: 'Invalid keySet, difficulty, window, or scope' })
+      res.status(400).json({ error: 'Invalid keySet, difficulty, mode, window, or scope' })
       return
     }
 
@@ -65,7 +68,7 @@ leaderboardRouter.get(
 
     // Friends scope is signed-in only: restrict to the user's followees + self.
     let scopeSql = ''
-    const params: (string | number)[] = [keySet, difficulty]
+    const params: (string | number)[] = [keySet, difficulty, mode]
     let timeSql = WINDOW_SQL[window]
     if (seasonArchive) {
       params.push(seasonArchive)
@@ -92,7 +95,7 @@ leaderboardRouter.get(
                 u.username, l.wpm, l.accuracy, l.created_at
          FROM leaderboard_entries l
          JOIN users u ON u.id = l.user_id
-         WHERE l.key_set = $1 AND l.difficulty = $2 ${timeSql} ${scopeSql}
+         WHERE l.key_set = $1 AND l.difficulty = $2 AND l.mode = $3 ${timeSql} ${scopeSql}
          ORDER BY l.user_id, l.wpm DESC, l.created_at DESC
        ) best
        ORDER BY wpm DESC, created_at ASC
