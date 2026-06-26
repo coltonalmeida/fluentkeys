@@ -7,8 +7,8 @@ leaderboard.
 
 It's completely ad-free. What makes it different is the word generator: it runs
 entirely on bundled static word lists with a weighted selection algorithm that
-biases toward your weak and recently-unlocked keys — no AI and no external API
-calls — so each test targets exactly the keys slowing you down. WPM and accuracy
+biases toward your weak and recently-unlocked keys, no AI and no external API
+calls. WPM and accuracy
 are computed client-side as you type, then validated server-side on completion.
 
 ## Tech stack
