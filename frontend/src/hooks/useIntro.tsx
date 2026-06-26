@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 
 interface IntroContextValue {
   /** True while the home-page unboxing animation is lifting. */
@@ -20,9 +21,15 @@ const IntroContext = createContext<IntroContextValue | null>(null)
  * on the home (practice) page only; `hasPlayed` lives here at the app root so it
  * survives route changes (it resets on a full browser reload). While the lid
  * lifts, `introPlaying` keeps the shared header hidden until it bleeds in.
+ *
+ * `introPlaying` is seeded synchronously from the initial route: on a fresh home
+ * load it starts `true` so the header is hidden on the very first paint, avoiding
+ * a one-frame flash before the home page's effect can flip it. The lazy
+ * initializer runs once on mount, so in-app navigation never re-triggers it.
  */
 export function IntroProvider({ children }: { children: ReactNode }) {
-  const [introPlaying, setIntroPlaying] = useState(false)
+  const { pathname } = useLocation()
+  const [introPlaying, setIntroPlaying] = useState(() => pathname === '/')
   const [hasPlayed, setHasPlayed] = useState(false)
   const startIntro = useCallback(() => setIntroPlaying(true), [])
   const endIntro = useCallback(() => setIntroPlaying(false), [])

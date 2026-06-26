@@ -137,7 +137,7 @@ export function TrainerPage() {
         )}
       </motion.section>
 
-      <hr className="border-border" />
+      <motion.hr {...bleedIn} className="border-border" />
 
       {/* Keyboard — strength colors revealed under the lifting lid. */}
       <section className="flex min-h-[18rem] items-start justify-center overflow-visible">
