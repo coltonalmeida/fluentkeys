@@ -2,14 +2,14 @@
 
 FluentKeys is a full-stack typing-test web app. Take a timed typing test, get
 instant WPM and accuracy, and track your personal bests across multiple modes and
-difficulties. Sign in to follow rivals and climb a global or friends-only
-leaderboard.
+difficulties. Sign in to follow rivals and compare your personal bests with
+friends.
 
-It's completely ad-free. What makes it different is the word generator: it runs
-entirely on bundled static word lists with a weighted selection algorithm that
-biases toward your weak and recently-unlocked keys, no AI and no external API
-calls. WPM and accuracy
-are computed client-side as you type, then validated server-side on completion.
+It's used by 200 typists and is completely ad-free. What makes it different is
+the word generator: it runs entirely on bundled static word lists with a weighted
+selection algorithm that biases toward your weak and recently-unlocked keys, no
+AI and no external API calls. WPM and accuracy are computed client-side as you
+type, then validated server-side on completion.
 
 ## Tech stack
 
