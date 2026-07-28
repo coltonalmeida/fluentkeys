@@ -9,6 +9,7 @@ import {
   type LeaderboardWindow,
 } from '../lib/api'
 import { useRivals } from '../hooks/useRivals'
+import { GLOBAL_LEADERBOARD_ENABLED } from '../lib/flags'
 import { Tooltip } from './ui/Tooltip'
 import type { TestMode } from '../hooks/useTypingTest'
 import { TEST_MODES } from '../lib/modes'
@@ -39,7 +40,11 @@ export function Leaderboard() {
   const [difficulty, setDifficulty] = useState<Difficulty>('medium')
   const [mode, setMode] = useState<TestMode>('words')
   const [window, setWindow] = useState<LeaderboardWindow>('all')
-  const [scope, setScope] = useState<LeaderboardScope>('global')
+  // Friends-only unless the global board is flagged on (the scope toggle is hidden
+  // in that case, so 'global' would be unreachable and the API rejects it anyway).
+  const [scope, setScope] = useState<LeaderboardScope>(
+    GLOBAL_LEADERBOARD_ENABLED ? 'global' : 'friends',
+  )
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null)
   const [error, setError] = useState(false)
 
@@ -77,21 +82,23 @@ export function Leaderboard() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Leaderboard</h2>
         <div className="flex flex-wrap gap-2 text-sm">
-          {/* Scope toggle */}
-          <div className="flex overflow-hidden rounded-md border border-border">
-            {(['global', 'friends'] as LeaderboardScope[]).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setScope(s)}
-                className={`px-3 py-1 capitalize ${
-                  scope === s ? 'bg-accent text-accent-contrast' : 'bg-surface text-muted'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          {/* Scope toggle — only meaningful while the global board is enabled. */}
+          {GLOBAL_LEADERBOARD_ENABLED && (
+            <div className="flex overflow-hidden rounded-md border border-border">
+              {(['global', 'friends'] as LeaderboardScope[]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setScope(s)}
+                  className={`px-3 py-1 capitalize ${
+                    scope === s ? 'bg-accent text-accent-contrast' : 'bg-surface text-muted'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
           <select value={keySet} onChange={(e) => setKeySet(e.target.value as KeySetId)} className={selectClass}>
             {Object.entries(KEY_SETS).map(([id, k]) => (
               <option key={id} value={id}>{k.label}</option>

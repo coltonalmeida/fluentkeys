@@ -3,6 +3,7 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 import rateLimit from 'express-rate-limit'
 import { requireSignedIn, upsertUser } from './auth.js'
 import { pool } from './db.js'
+import { GLOBAL_LEADERBOARD_ENABLED } from './env.js'
 
 // Daily challenge (§9): one shared, seeded test per UTC day. The backend defines
 // the fixed config + a date-derived seed; every client generates identical words
@@ -69,6 +70,12 @@ dailyRouter.get(
 dailyRouter.get(
   '/daily/leaderboard',
   wrap(async (req, res) => {
+    // Hidden with the rest of the global boards; the daily test itself and result
+    // submission stay live.
+    if (!GLOBAL_LEADERBOARD_ENABLED) {
+      res.status(404).json({ error: 'Not found' })
+      return
+    }
     const raw = typeof req.query.date === 'string' ? req.query.date : ''
     const date = DATE_RE.test(raw) ? raw : todayUtc()
     const { rows } = await pool.query<{

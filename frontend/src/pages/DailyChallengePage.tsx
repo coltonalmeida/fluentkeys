@@ -15,6 +15,7 @@ import {
   type DailyConfig,
   type DailyLeaderboardEntry,
 } from '../lib/api'
+import { GLOBAL_LEADERBOARD_ENABLED } from '../lib/flags'
 import type { CodeLanguage } from '../lib/preferences'
 import type { Difficulty, KeySetId } from '../lib/words'
 
@@ -40,6 +41,9 @@ export function DailyChallengePage() {
   }, [getToken])
 
   const loadBoard = useCallback(() => {
+    // The daily board is part of the global-leaderboard flag; the endpoint 404s
+    // while it's off, so don't ask for it.
+    if (!GLOBAL_LEADERBOARD_ENABLED) return
     getDailyLeaderboard()
       .then((r) => setBoard(r.entries))
       .catch(() => {})
@@ -191,46 +195,48 @@ export function DailyChallengePage() {
         </AnimatePresence>
       </section>
 
-      {/* Daily leaderboard */}
-      <section className="flex flex-col gap-3 rounded-lg bg-surface p-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          Today’s leaderboard
-        </h2>
-        {board === null ? (
-          <p className="text-sm text-muted">Loading…</p>
-        ) : board.length === 0 ? (
-          <p className="text-sm text-muted">No times yet today — set the pace!</p>
-        ) : (
-          <ol className="flex flex-col">
-            {board.map((e, i) => (
-              <li
-                key={`${e.username}-${i}`}
-                className="flex items-baseline gap-4 border-t border-border py-2 first:border-t-0"
-              >
-                <span className={`w-8 text-right font-mono ${i < 3 ? 'text-accent' : 'text-muted'}`}>
-                  {i + 1}
-                </span>
-                <span className="flex-1 truncate text-fg">
-                  {e.username ? (
-                    <Link to={`/u/${encodeURIComponent(e.username)}`} className="hover:underline">
-                      {e.username}
-                    </Link>
-                  ) : (
-                    'anonymous'
-                  )}
-                </span>
-                <span className="font-mono text-lg font-bold text-fg">
-                  {Number(e.wpm).toFixed(0)}
-                  <span className="ml-1 text-xs font-normal text-muted">wpm</span>
-                </span>
-                <span className="w-16 text-right text-sm text-muted">
-                  {Number(e.accuracy).toFixed(1)}%
-                </span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+      {/* Daily leaderboard — hidden with the rest of the global boards. */}
+      {GLOBAL_LEADERBOARD_ENABLED && (
+        <section className="flex flex-col gap-3 rounded-lg bg-surface p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
+            Today’s leaderboard
+          </h2>
+          {board === null ? (
+            <p className="text-sm text-muted">Loading…</p>
+          ) : board.length === 0 ? (
+            <p className="text-sm text-muted">No times yet today — set the pace!</p>
+          ) : (
+            <ol className="flex flex-col">
+              {board.map((e, i) => (
+                <li
+                  key={`${e.username}-${i}`}
+                  className="flex items-baseline gap-4 border-t border-border py-2 first:border-t-0"
+                >
+                  <span className={`w-8 text-right font-mono ${i < 3 ? 'text-accent' : 'text-muted'}`}>
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 truncate text-fg">
+                    {e.username ? (
+                      <Link to={`/u/${encodeURIComponent(e.username)}`} className="hover:underline">
+                        {e.username}
+                      </Link>
+                    ) : (
+                      'anonymous'
+                    )}
+                  </span>
+                  <span className="font-mono text-lg font-bold text-fg">
+                    {Number(e.wpm).toFixed(0)}
+                    <span className="ml-1 text-xs font-normal text-muted">wpm</span>
+                  </span>
+                  <span className="w-16 text-right text-sm text-muted">
+                    {Number(e.accuracy).toFixed(1)}%
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+      )}
     </div>
   )
 }

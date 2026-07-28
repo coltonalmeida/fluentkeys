@@ -2,6 +2,7 @@ import { getAuth } from '@clerk/express'
 import { Router, type NextFunction, type Request, type Response } from 'express'
 import { upsertUser } from './auth.js'
 import { pool } from './db.js'
+import { GLOBAL_LEADERBOARD_ENABLED } from './env.js'
 
 const KEY_SETS = ['home', 'home-top', 'all'] as const
 const DIFFICULTIES = ['easy', 'medium', 'hard'] as const
@@ -57,6 +58,13 @@ leaderboardRouter.get(
       !(SCOPES as readonly string[]).includes(scope)
     ) {
       res.status(400).json({ error: 'Invalid keySet, difficulty, mode, window, or scope' })
+      return
+    }
+
+    // The global board is flagged off — behave as if the route doesn't exist.
+    // Friends scope keeps working.
+    if (scope === 'global' && !GLOBAL_LEADERBOARD_ENABLED) {
+      res.status(404).json({ error: 'Not found' })
       return
     }
 
