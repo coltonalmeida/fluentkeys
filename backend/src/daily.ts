@@ -70,14 +70,15 @@ dailyRouter.get(
 dailyRouter.get(
   '/daily/leaderboard',
   wrap(async (req, res) => {
-    // Hidden with the rest of the global boards; the daily test itself and result
-    // submission stay live.
-    if (!GLOBAL_LEADERBOARD_ENABLED) {
-      res.status(404).json({ error: 'Not found' })
-      return
-    }
     const raw = typeof req.query.date === 'string' ? req.query.date : ''
     const date = DATE_RE.test(raw) ? raw : todayUtc()
+    // Hidden with the rest of the global boards; the daily test itself and result
+    // submission stay live. Empty rather than 404 so a frontend build that predates
+    // the flag degrades to "No times yet today" instead of an error.
+    if (!GLOBAL_LEADERBOARD_ENABLED) {
+      res.json({ date, entries: [] })
+      return
+    }
     const { rows } = await pool.query<{
       username: string | null
       wpm: string

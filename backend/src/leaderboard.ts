@@ -1,6 +1,5 @@
 import { getAuth } from '@clerk/express'
 import { Router, type NextFunction, type Request, type Response } from 'express'
-import { upsertUser } from './auth.js'
 import { pool } from './db.js'
 import { GLOBAL_LEADERBOARD_ENABLED } from './env.js'
 
@@ -61,10 +60,13 @@ leaderboardRouter.get(
       return
     }
 
-    // The global board is flagged off — behave as if the route doesn't exist.
-    // Friends scope keeps working.
+    // The global board is flagged off. Serve it empty rather than 404: the frontend
+    // flag is baked in at build time while this one is read at runtime, so the two
+    // sides can deploy out of step. An empty board degrades to "No entries yet" on a
+    // stale client instead of a "Could not load the leaderboard" error. Friends
+    // scope keeps working.
     if (scope === 'global' && !GLOBAL_LEADERBOARD_ENABLED) {
-      res.status(404).json({ error: 'Not found' })
+      res.json({ entries: [] })
       return
     }
 
@@ -88,7 +90,20 @@ leaderboardRouter.get(
         res.status(401).json({ error: 'Sign in to view the friends leaderboard' })
         return
       }
-      const me = await upsertUser(clerkId)
+      // Read-only lookup, not upsertUser: this is a GET, and creating/refreshing the
+      // identity row here costs a Clerk round-trip per load and makes the read fail
+      // on any identity-sync problem. The routes that own the row (/auth/me,
+      // /auth/preferences, result submission) still upsert it.
+      const { rows } = await pool.query<{ id: string }>(
+        `SELECT id FROM users WHERE clerk_id = $1`,
+        [clerkId],
+      )
+      const me = rows[0]
+      // No row yet — nothing posted and nobody followed, so the board is empty.
+      if (!me) {
+        res.json({ entries: [] })
+        return
+      }
       params.push(me.id)
       scopeSql = `AND (l.user_id = $${params.length}
                        OR l.user_id IN (SELECT followee_id FROM follows WHERE follower_id = $${params.length}))`
